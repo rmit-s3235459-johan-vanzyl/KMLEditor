@@ -47,8 +47,8 @@ public class KMLDocument {
 
                     data.add(new Placemark(
                             names.item(0).getTextContent(),
-                            ((desciption.getLength() > 0) ? desciption.item(0).getTextContent() : ""),
-                            ((coordinates.getLength() > 0) ? coordinates.item(0).getTextContent() : ""),
+                            ((desciption.getLength() > 0) ? desciption.item(0).getTextContent() : "null"),
+                            ((coordinates.getLength() > 0) ? coordinates.item(0).getTextContent() : "null"),
                             i
                     ));
                 }
