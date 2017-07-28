@@ -4,8 +4,9 @@ import com.jfoenix.controls.JFXDecorator;
 import javafx.application.Application;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
 
 public class Main extends Application {
@@ -17,12 +18,12 @@ public class Main extends Application {
 
         FXMLLoader fxmlLoader = new FXMLLoader();
         fxmlLoader.setLocation(Main.class.getResource("/Main.fxml"));
-        StackPane root = fxmlLoader.load();
+        AnchorPane root = fxmlLoader.load();
 
         JFXDecorator jfxDecorator = new JFXDecorator(primaryStage, root);
         jfxDecorator.setCustomMaximize(true);
 
-        Scene scene = new Scene(jfxDecorator, 800, 600);
+        Scene scene = new Scene(jfxDecorator, 1280, 800);
         SharedElements.setMainScene(scene);
 
         final ObservableList<String> sheets = scene.getStylesheets();
@@ -34,6 +35,7 @@ public class Main extends Application {
 
         primaryStage.setScene(scene);
         primaryStage.show();
+
     }
 
 

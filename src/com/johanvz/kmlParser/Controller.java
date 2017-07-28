@@ -4,22 +4,24 @@ import com.jfoenix.controls.*;
 import com.jfoenix.controls.cells.editors.TextFieldEditorBuilder;
 import com.jfoenix.controls.cells.editors.base.GenericEditableTreeTableCell;
 import com.jfoenix.controls.datamodels.treetable.RecursiveTreeObject;
+import com.lynden.gmapsfx.GoogleMapView;
+import com.lynden.gmapsfx.MapComponentInitializedListener;
+import com.lynden.gmapsfx.javascript.object.*;
+import com.lynden.gmapsfx.service.geocoding.GeocoderStatus;
+import com.lynden.gmapsfx.service.geocoding.GeocodingResult;
+import com.lynden.gmapsfx.service.geocoding.GeocodingService;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.ObservableList;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Label;
-import javafx.scene.control.TreeTableColumn;
-import javafx.scene.layout.BorderPane;
+import javafx.scene.control.*;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
@@ -27,28 +29,38 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Comparator;
 import java.util.ResourceBundle;
 import java.util.function.Function;
 
-public class Controller implements Initializable {
+public class Controller implements Initializable, MapComponentInitializedListener {
     private static final String PREFIX = "( ";
     private static final String POSTFIX = " )";
     private static KMLDocument document;
-    public StackPane root;
+    private static GeocodingService geocodingService;
+    private static GoogleMap map;
+    private static StringProperty address = new SimpleStringProperty();
+    private static Marker marker;
+
     public Label rowCount;
     public JFXTextField searchField;
     public JFXTreeTableView<KMLDocument.Placemark> treeTableView;
     public JFXTreeTableColumn<KMLDocument.Placemark, String> name;
     public JFXTreeTableColumn<KMLDocument.Placemark, String> description;
     public JFXTreeTableColumn<KMLDocument.Placemark, String> coordinate;
-    public BorderPane borderPane;
-    public VBox centerBorderPane;
     public JFXDialog warningDialog;
+    public Label warningDialogHeader;
+    public Label warningDialogBody;
+    public JFXSnackbar snackBar;
+    public GoogleMapView mapView;
+    public AnchorPane root;
+    public StackPane centerBorderPane;
+    public TextField addressTextField;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-
+        snackBar.registerSnackbarContainer(root);
+        mapView.addMapInializedListener(this);
+        address.bind(addressTextField.textProperty());
     }
 
     public void importKML() {
@@ -63,6 +75,8 @@ public class Controller implements Initializable {
             Controller.document = new KMLDocument(selectedFile);
             setupTreeTable();
         }
+
+        mapView.addMapInializedListener(this);
     }
 
     private void setupTreeTable() {
@@ -107,6 +121,43 @@ public class Controller implements Initializable {
 
         searchField.textProperty()
                 .addListener(setupSearchField(treeTableView));
+
+        treeTableView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            TreeTableView.TreeTableViewSelectionModel<KMLDocument.Placemark> selectionModel = treeTableView.getSelectionModel();
+
+            TreeItem<KMLDocument.Placemark> placemark = selectionModel.getSelectedItem();
+
+            String stringCoord = placemark.getValue().getCoordinate().get();
+            String[] splits = stringCoord.split(",");
+            if(splits.length == 2) {
+                String latitude = splits[0];
+                String longtitude = splits[1];
+                double dLatitude = Double.parseDouble(latitude);
+                double dLongtitude = Double.parseDouble(longtitude);
+
+                LatLong latLong = new LatLong(dLongtitude, dLatitude);
+                map.setCenter(latLong);
+
+                if(marker != null) {
+                    marker.setVisible(false);
+                    map.removeMarker(marker);
+                }
+
+                MarkerOptions markerOptions = new MarkerOptions();
+                markerOptions.position(latLong);
+                marker = new Marker(markerOptions);
+                map.addMarker(marker);
+
+            } else {
+                snackBar.fireEvent(new JFXSnackbar.SnackbarEvent(
+                        "Contains invalid coordinate",
+                        "CLOSE",
+                        3000,
+                        true,
+                        b -> snackBar.close()
+                ));
+            }
+        });
     }
 
     private ChangeListener<String> setupSearchField(final JFXTreeTableView<KMLDocument.Placemark> tableView) {
@@ -131,8 +182,10 @@ public class Controller implements Initializable {
 
     public void saveKML() {
         if (document == null) {
+            warningDialogHeader.setText("Error");
+            warningDialogBody.setText("Please ensure KML has been loaded!");
             warningDialog.setTransitionType(JFXDialog.DialogTransition.CENTER);
-            warningDialog.show(root);
+            warningDialog.show(centerBorderPane);
             return;
         }
 
@@ -149,9 +202,30 @@ public class Controller implements Initializable {
             try {
                 Transformer transformer = TransformerFactory.newInstance().newTransformer();
                 if(selectedFile.exists()) {
-                    selectedFile.delete();
+                    while(!selectedFile.delete()) {
+                        warningDialogHeader.setText("Error");
+                        warningDialogBody.setText("Could not delete file \"" + selectedFile.getAbsolutePath() + "\". Please ensure it is closed!");
+                        warningDialog.setTransitionType(JFXDialog.DialogTransition.CENTER);
+                        warningDialog.show(centerBorderPane);
+                    }
                 }
-                selectedFile.createNewFile();
+                if(selectedFile.createNewFile()) {
+                    snackBar.fireEvent(new JFXSnackbar.SnackbarEvent(
+                            "Saved successfully",
+                            "CLOSE",
+                            3000,
+                            true,
+                            b -> snackBar.close()
+                    ));
+                } else {
+                    snackBar.fireEvent(new JFXSnackbar.SnackbarEvent(
+                            "Unsuccessful",
+                            "CLOSE",
+                            3000,
+                            true,
+                            b -> snackBar.close()
+                    ));
+                }
                 Result output = new StreamResult(selectedFile);
                 Source input = new DOMSource(xmlDocument);
                 transformer.transform(input, output);
@@ -161,8 +235,51 @@ public class Controller implements Initializable {
         }
     }
 
-
     public void closeDialog() {
         warningDialog.close();
+    }
+
+    @Override
+    public void mapInitialized() {
+        geocodingService = new GeocodingService();
+        MapOptions mapOptions = new MapOptions();
+
+        mapOptions.center(new LatLong(-37.829003, 147.619331))
+                .mapType(MapTypeIdEnum.ROADMAP)
+                .overviewMapControl(false)
+                .panControl(false)
+                .rotateControl(false)
+                .scaleControl(false)
+                .streetViewControl(false)
+                .zoomControl(false)
+                .zoom(12);
+
+        map = mapView.createMap(mapOptions);
+    }
+
+    public void searchAddress() {
+        geocodingService.geocode(address.get(), (GeocodingResult[] results, GeocoderStatus status) -> {
+
+            LatLong latLong;
+
+            if( status == GeocoderStatus.ZERO_RESULTS) {
+                warningDialogHeader.setText("Error");
+                warningDialogBody.setText("No matching address found");
+                warningDialog.setTransitionType(JFXDialog.DialogTransition.CENTER);
+                warningDialog.show(centerBorderPane);
+                return;
+            } else if( results.length > 1 ) {
+                warningDialogHeader.setText("Error");
+                warningDialogBody.setText("Multiple results found, showing the first one.");
+                warningDialog.setTransitionType(JFXDialog.DialogTransition.CENTER);
+                warningDialog.show(centerBorderPane);
+                latLong = new LatLong(results[0].getGeometry().getLocation().getLatitude(), results[0].getGeometry().getLocation().getLongitude());
+            } else {
+                latLong = new LatLong(results[0].getGeometry().getLocation().getLatitude(), results[0].getGeometry().getLocation().getLongitude());
+            }
+
+            map.setCenter(latLong);
+
+        });
     }
 }

@@ -9,6 +9,7 @@
     secondary-text-color: #757575;
     divider-color: #BDBDBD;
     light-background: #FAFAFA;
+    -fx-font-family: "Roboto";
 }
 
 #root {
@@ -282,10 +283,31 @@
 }
 
 
-
-
 .dialog-accept {
     -fx-text-fill: #03A9F4;
     -fx-font-weight: BOLD;
     -fx-padding: 0.7em 0.8em;
+}
+
+
+/*******************************************************************************
+ *                                                                             *
+ * Snackbar       		                                                       *
+ *                                                                             *
+ ******************************************************************************/
+
+.jfx-snackbar-content {
+    -fx-background-color: default-primary-color;
+    -fx-border-color: dark-primary-color;
+    -fx-border-width: 4px 4px 0px 4px;
+}
+
+.jfx-snackbar-toast {
+    -fx-text-fill: text-primary-color;
+    -fx-font-size: 15;
+    -fx-font-weight: BOLD;
+}
+
+.jfx-snackbar-action {
+    -fx-text-fill: accent-color;
 }

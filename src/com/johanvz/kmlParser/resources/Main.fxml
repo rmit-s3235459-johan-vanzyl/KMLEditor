@@ -1,98 +1,121 @@
-<?import javafx.scene.layout.StackPane?>
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.lynden.gmapsfx.GoogleMapView?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.layout.AnchorPane?>
 
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.VBox?>
 <?import com.jfoenix.controls.JFXToolbar?>
-<?import javafx.scene.control.Label?>
-<?import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView?>
 <?import javafx.scene.layout.HBox?>
-<?import com.jfoenix.controls.JFXTextField?>
-<?import com.jfoenix.controls.JFXTreeTableView?>
-<?import com.jfoenix.controls.JFXTreeTableColumn?>
 <?import com.jfoenix.controls.JFXRippler?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.StackPane?>
+<?import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView?>
 <?import com.jfoenix.controls.JFXDialog?>
+<?import com.jfoenix.controls.JFXSnackbar?>
 <?import com.jfoenix.controls.JFXDialogLayout?>
 <?import com.jfoenix.controls.JFXButton?>
-<StackPane fx:id="root" fx:controller="com.johanvz.kmlParser.Controller"
-           xmlns:fx="http://javafx.com/fxml" alignment="center" minWidth="800" minHeight="600">
-    <BorderPane fx:id="borderPane">
-        <top>
-            <JFXToolbar>
-                <leftItems>
-                    <HBox pickOnBounds="false">
-                        <JFXRippler>
-                            <VBox onMouseClicked="#importKML" styleClass="jfx-custom-vbox" style="-fx-padding: 5 0 0 15">
-                                <Label>
-                                    <graphic>
-                                        <StackPane styleClass="tool-bar-graphic-container">
-                                            <FontAwesomeIconView glyphName="FOLDER_OPEN_ALT" size="64px"/>
+<?import com.jfoenix.controls.JFXTreeTableView?>
+<?import com.jfoenix.controls.JFXTextField?>
+<?import com.jfoenix.controls.JFXTreeTableColumn?>
+<?import javafx.scene.control.TextField?>
+<AnchorPane fx:id="root" minWidth="1280" minHeight="800" xmlns="http://javafx.com/javafx/8.0.121"
+            xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.johanvz.kmlParser.Controller">
+    <children>
+        <BorderPane>
+            <top>
+                <JFXToolbar>
+                    <leftItems>
+                        <HBox pickOnBounds="false">
+                            <JFXRippler>
+                                <VBox styleClass="jfx-custom-vbox" onMouseClicked="#importKML"
+                                      style="-fx-padding: 5 0 0 15">
+                                    <Label>
+                                        <graphic>
+                                            <StackPane styleClass="tool-bar-graphic-container">
+                                                <FontAwesomeIconView glyphName="FOLDER_OPEN_ALT" size="64px"/>
+                                            </StackPane>
+                                        </graphic>
+                                    </Label>
+                                    <Label>
+                                        Import KML
+                                    </Label>
+                                </VBox>
+                            </JFXRippler>
+                            <JFXRippler>
+                                <VBox styleClass="jfx-custom-vbox" onMouseClicked="#saveKML">
+                                    <Label>
+                                        <graphic>
+                                            <StackPane styleClass="tool-bar-graphic-container">
+                                                <FontAwesomeIconView glyphName="FLOPPY_ALT" size="64px"/>
+                                            </StackPane>
+                                        </graphic>
+                                    </Label>
+                                    <Label style="-fx-padding: 0 0 0 7">
+                                        Save KML
+                                    </Label>
+                                </VBox>
+                            </JFXRippler>
+                        </HBox>
+                    </leftItems>
+                </JFXToolbar>
+            </top>
+            <center>
+                <SplitPane dividerPositions="0.60" prefHeight="${root.height}" prefWidth="${root.width}">
+                    <items>
+                        <StackPane fx:id="centerBorderPane" minHeight="0.0" minWidth="0.0">
+                            <VBox spacing="10">
+                                <HBox alignment="CENTER">
+                                    <Label styleClass="title-label">KML Elements</Label>
+                                    <Label styleClass="title-label" fx:id="rowCount"/>
+                                    <StackPane HBox.hgrow="ALWAYS">
+                                        <StackPane StackPane.alignment="CENTER_RIGHT" maxWidth="300">
+                                            <JFXTextField fx:id="searchField" promptText="Search..."/>
                                         </StackPane>
-                                    </graphic>
-                                </Label>
-                                <Label>
-                                    Import
-                                    KML
-                                </Label>
+                                    </StackPane>
+                                </HBox>
+                                <JFXTreeTableView fx:id="treeTableView" prefHeight="${root.height}">
+                                    <columns>
+                                        <JFXTreeTableColumn fx:id="name"
+                                                            text="Name" minWidth="250"/>
+                                        <JFXTreeTableColumn fx:id="description"
+                                                            text="Description" minWidth="250"/>
+                                        <JFXTreeTableColumn fx:id="coordinate"
+                                                            text="Coordinate" minWidth="260"/>
+                                    </columns>
+                                </JFXTreeTableView>
                             </VBox>
-                        </JFXRippler>
-                        <JFXRippler>
-                            <VBox onMouseClicked="#saveKML" styleClass="jfx-custom-vbox">
-                                <Label>
-                                    <graphic>
-                                        <StackPane styleClass="tool-bar-graphic-container">
-                                            <FontAwesomeIconView glyphName="FLOPPY_ALT" size="64px"/>
-                                        </StackPane>
-                                    </graphic>
-                                </Label>
-                                <Label style="-fx-padding: 0 0 0 7">
-                                    Save
-                                    KML
-                                </Label>
-                            </VBox>
-                        </JFXRippler>
-                    </HBox>
-                </leftItems>
-            </JFXToolbar>
-        </top>
-        <center>
-            <VBox spacing="10" fx:id="centerBorderPane">
-                <HBox alignment="CENTER">
-                    <Label styleClass="title-label">KML Elements</Label>
-                    <Label styleClass="title-label" fx:id="rowCount"/>
-                    <StackPane HBox.hgrow="ALWAYS">
-                        <StackPane StackPane.alignment="CENTER_RIGHT" maxWidth="300">
-                            <JFXTextField fx:id="searchField" promptText="Search..."/>
                         </StackPane>
-                    </StackPane>
-                </HBox>
-                <JFXTreeTableView fx:id="treeTableView" prefHeight="${root.height}">
-                    <columns>
-                        <JFXTreeTableColumn fx:id="name"
-                                            text="Name" minWidth="250"/>
-                        <JFXTreeTableColumn fx:id="description"
-                                            text="Description" minWidth="250"/>
-                        <JFXTreeTableColumn fx:id="coordinate"
-                                            text="Coordinate" minWidth="260"/>
-                    </columns>
-                </JFXTreeTableView>
-            </VBox>
-        </center>
-    </BorderPane>
-
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                            <children>
+                                <GoogleMapView fx:id="mapView" prefHeight="500.0" prefWidth="700.0"
+                                               AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0.0"
+                                               AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0.0"/>
+                                <TextField fx:id="addressTextField" promptText="Search Address..." prefWidth="300"
+                                           AnchorPane.rightAnchor="10" AnchorPane.topAnchor="10" onAction="#searchAddress"/>
+                            </children>
+                        </AnchorPane>
+                    </items>
+                </SplitPane>
+            </center>
+        </BorderPane>
+    </children>
     <JFXDialog fx:id="warningDialog">
         <JFXDialogLayout>
             <heading>
-                <Label>Error</Label>
+                <Label fx:id="warningDialogHeader">Error</Label>
             </heading>
             <body>
-                <Label>
+                <Label fx:id="warningDialogBody">
                     Please ensure KML has been loaded!
                 </Label>
             </body>
             <actions>
-                <JFXButton styleClass="dialog-accept" onMouseClicked="#closeDialog">OKAY
-                </JFXButton>
+                <JFXButton styleClass="dialog-accept" onMouseClicked="#closeDialog">OKAY</JFXButton>
             </actions>
         </JFXDialogLayout>
     </JFXDialog>
-</StackPane>
+
+    <JFXSnackbar fx:id="snackBar" prefWidth="300"/>
+</AnchorPane>

@@ -21,7 +21,6 @@ public class KMLDocument {
     private File file;
     private final ObservableList<Placemark> data = FXCollections.observableArrayList();
     private Document kmlDocument;
-    private NodeList nodeList;
 
     public KMLDocument(File file) {
         this.file = file;
@@ -36,7 +35,7 @@ public class KMLDocument {
             kmlDocument = documentBuilder.parse(file);
             kmlDocument.getDocumentElement().normalize();
 
-            nodeList = kmlDocument.getElementsByTagName("Placemark");
+            NodeList nodeList = kmlDocument.getElementsByTagName("Placemark");
             for (int i = 0; i < nodeList.getLength(); i++) {
                 Node node = nodeList.item(i);
                 Element element = (Element) node;
@@ -91,10 +90,6 @@ public class KMLDocument {
         return kmlDocument;
     }
 
-    public NodeList getNodeList() {
-        return nodeList;
-    }
-
     static final class Placemark extends RecursiveTreeObject<Placemark> {
         final StringProperty name;
         final StringProperty description;
@@ -114,26 +109,13 @@ public class KMLDocument {
             return name;
         }
 
-        public void setName(String name) {
-            this.name.set(name);
-        }
-
         StringProperty getDescription() {
             return description;
-        }
-
-        public void setDescription(String description) {
-            this.description.set(description);
         }
 
         StringProperty getCoordinate() {
             return coordinate;
         }
-
-        public void setCoordinate(String coordinate) {
-            this.coordinate.set(coordinate);
-        }
-
 
         public Node getNodeName() {
             return nodeName;
