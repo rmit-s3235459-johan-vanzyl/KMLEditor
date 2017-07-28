@@ -74,28 +74,28 @@ public class Controller implements Initializable {
         name.setCellFactory((TreeTableColumn<KMLDocument.Placemark, String> param) -> new GenericEditableTreeTableCell<>(
                 new TextFieldEditorBuilder()));
         name.setOnEditCommit((TreeTableColumn.CellEditEvent<KMLDocument.Placemark, String> t) -> {
-            t.getTreeTableView()
-                    .getTreeItem(t.getTreeTablePosition()
-                            .getRow())
-                    .getValue().getName().set(t.getNewValue());
+            KMLDocument.Placemark placemark = t.getTreeTableView().getTreeItem(t.getTreeTablePosition().getRow()).getValue();
+
+            placemark.getName().set(t.getNewValue());
+            placemark.getNodeName().setTextContent(t.getNewValue());
         });
 
         description.setCellFactory((TreeTableColumn<KMLDocument.Placemark, String> param) -> new GenericEditableTreeTableCell<>(
                 new TextFieldEditorBuilder()));
         description.setOnEditCommit((TreeTableColumn.CellEditEvent<KMLDocument.Placemark, String> t) -> {
-            t.getTreeTableView()
-                    .getTreeItem(t.getTreeTablePosition()
-                            .getRow())
-                    .getValue().getDescription().set(t.getNewValue());
+            KMLDocument.Placemark placemark = t.getTreeTableView().getTreeItem(t.getTreeTablePosition().getRow()).getValue();
+
+            placemark.getDescription().set(t.getNewValue());
+            placemark.getNodeDescription().setTextContent(t.getNewValue());
         });
 
         coordinate.setCellFactory((TreeTableColumn<KMLDocument.Placemark, String> param) -> new GenericEditableTreeTableCell<>(
                 new TextFieldEditorBuilder()));
         coordinate.setOnEditCommit((TreeTableColumn.CellEditEvent<KMLDocument.Placemark, String> t) -> {
-            t.getTreeTableView()
-                    .getTreeItem(t.getTreeTablePosition()
-                            .getRow())
-                    .getValue().getCoordinate().set(t.getNewValue());
+            KMLDocument.Placemark placemark = t.getTreeTableView().getTreeItem(t.getTreeTablePosition().getRow()).getValue();
+
+            placemark.getCoordinate().set(t.getNewValue());
+            placemark.getNodeCoordinate().setTextContent(t.getNewValue());
         });
 
         treeTableView.setRoot(new RecursiveTreeItem<>(document.getData(), RecursiveTreeObject::getChildren));
@@ -144,67 +144,23 @@ public class Controller implements Initializable {
                 new FileChooser.ExtensionFilter("All Files", "*.*"));
         File selectedFile = fileChooser.showSaveDialog(mainStage);
         if (selectedFile != null) {
-            saveTheLot(selectedFile);
-        }
-    }
+            Document xmlDocument = document.getKmlDocument();
 
-    private void saveTheLot(File file) {
-        ObservableList<KMLDocument.Placemark> list = document.getData();
-        list.sort(Comparator.comparingLong(KMLDocument.Placemark::getId));
-        Document xmlDocument = document.getKmlDocument();
-        NodeList nodeList = document.getNodeList();
-
-        list.forEach(placemark -> {
-            int i = (int) placemark.getId();
-            Node node = nodeList.item(i);
-            Element element = (Element) node;
-            NodeList names = element.getElementsByTagName("name");
-            if(names.getLength() > 0) {
-                NodeList desciption = element.getElementsByTagName("description");
-                NodeList coordinates = element.getElementsByTagName("coordinates");
-
-                names.item(0).setTextContent(placemark.getName().getValue());
-                if(desciption.getLength() > 0) {
-                    desciption.item(0).setTextContent(placemark.getDescription().getValue());
-                } else {
-                    Element newDescription = xmlDocument.createElement("description");
-                    newDescription.setTextContent(placemark.getDescription().getValue());
-                    node.appendChild(newDescription);
+            try {
+                Transformer transformer = TransformerFactory.newInstance().newTransformer();
+                if(selectedFile.exists()) {
+                    selectedFile.delete();
                 }
-                if(coordinates.getLength() > 0) {
-                    coordinates.item(0).setTextContent(placemark.getCoordinate().getValue());
-                } else {
-                    Element newDescription = xmlDocument.createElement("coordinates");
-                    newDescription.setTextContent(placemark.getCoordinate().getValue());
-                    node.appendChild(newDescription);
-                }
+                selectedFile.createNewFile();
+                Result output = new StreamResult(selectedFile);
+                Source input = new DOMSource(xmlDocument);
+                transformer.transform(input, output);
+            } catch (IOException | TransformerException e) {
+                e.printStackTrace();
             }
-        });
-
-        Transformer transformer = null;
-        try {
-            transformer = TransformerFactory.newInstance().newTransformer();
-        } catch (TransformerConfigurationException e) {
-            e.printStackTrace();
-        }
-        if(file.exists()) {
-            file.delete();
-        }
-
-        try {
-            file.createNewFile();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        Result output = new StreamResult(file);
-        Source input = new DOMSource(xmlDocument);
-
-        try {
-            transformer.transform(input, output);
-        } catch (TransformerException e) {
-            e.printStackTrace();
         }
     }
+
 
     public void closeDialog() {
         warningDialog.close();

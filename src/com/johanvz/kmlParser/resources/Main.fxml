@@ -58,21 +58,21 @@
             <VBox spacing="10" fx:id="centerBorderPane">
                 <HBox alignment="CENTER">
                     <Label styleClass="title-label">KML Elements</Label>
-                    <Label styleClass="title-label" fx:id="rowCount"></Label>
+                    <Label styleClass="title-label" fx:id="rowCount"/>
                     <StackPane HBox.hgrow="ALWAYS">
                         <StackPane StackPane.alignment="CENTER_RIGHT" maxWidth="300">
-                            <JFXTextField fx:id="searchField" promptText="Search..."></JFXTextField>
+                            <JFXTextField fx:id="searchField" promptText="Search..."/>
                         </StackPane>
                     </StackPane>
                 </HBox>
                 <JFXTreeTableView fx:id="treeTableView" prefHeight="${root.height}">
                     <columns>
                         <JFXTreeTableColumn fx:id="name"
-                                            text="Name" minWidth="250" resizable="true"></JFXTreeTableColumn>
+                                            text="Name" minWidth="250"/>
                         <JFXTreeTableColumn fx:id="description"
-                                            text="Description" minWidth="250" resizable="true"></JFXTreeTableColumn>
+                                            text="Description" minWidth="250"/>
                         <JFXTreeTableColumn fx:id="coordinate"
-                                            text="Coordinate" minWidth="260" resizable="true"></JFXTreeTableColumn>
+                                            text="Coordinate" minWidth="260"/>
                     </columns>
                 </JFXTreeTableView>
             </VBox>
