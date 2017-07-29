@@ -71,6 +71,20 @@
                                     </Label>
                                 </VBox>
                             </JFXRippler>
+                            <JFXRippler>
+                                <VBox styleClass="jfx-custom-vbox" onMouseClicked="#CSVtoKML">
+                                    <Label>
+                                        <graphic>
+                                            <StackPane styleClass="tool-bar-graphic-container">
+                                                <FontAwesomeIconView glyphName="REFRESH" size="64px"/>
+                                            </StackPane>
+                                        </graphic>
+                                    </Label>
+                                    <Label style="-fx-padding: 0 0 0 9">
+                                        CSV to KML
+                                    </Label>
+                                </VBox>
+                            </JFXRippler>
                         </HBox>
                     </leftItems>
                 </JFXToolbar>

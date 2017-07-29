@@ -309,31 +309,54 @@ public class Controller implements Initializable, MapComponentInitializedListene
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save work to KML file");
         fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Export to CSV", "*.csv"),
+                new FileChooser.ExtensionFilter("CSV", "*.csv"),
                 new FileChooser.ExtensionFilter("All Files", "*.*"));
         File selectedFile = fileChooser.showSaveDialog(mainStage);
         if(selectedFile != null) {
             try {
-
                 StringBuilder stringBuilder = new StringBuilder();
 
                 for (KMLDocument.Placemark placemark : document.getData()) {
-                    stringBuilder.append('"' + placemark.getName().get() + '"');
+                    stringBuilder.append('"').append(placemark.getName().get()).append('"');
                     stringBuilder.append(',');
-                    stringBuilder.append('"' + placemark.getDescription().get() +'"');
+                    stringBuilder.append('"').append(placemark.getDescription().get()).append('"');
                     stringBuilder.append(',');
-                    stringBuilder.append('"' + placemark.getCoordinate().get() + '"');
+                    stringBuilder.append('"').append(placemark.getCoordinate().get()).append('"');
                     stringBuilder.append('\n');
                 }
 
                 FileWriter fileWriter = new FileWriter(selectedFile.getAbsoluteFile());
 
-                fileWriter.append(stringBuilder.toString());
+                String toWrite = stringBuilder.toString().replace("&", "&amp;");
+
+                fileWriter.append(toWrite);
                 fileWriter.flush();
                 fileWriter.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+
+    }
+
+    public void CSVtoKML() {
+        Stage mainStage = SharedElements.getMainStage();
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select CSV to convert");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("CSV", "*.csv"),
+                new FileChooser.ExtensionFilter("All Files", "*.*"));
+        File inputFile = fileChooser.showOpenDialog(mainStage);
+        if(inputFile != null) {
+            String SoutputFile = inputFile.getAbsolutePath().replace(".csv", ".kml");
+            File outputFile = new File(SoutputFile);
+            while(outputFile.exists()) {
+                SoutputFile = SoutputFile.replace(".kml", " copy.kml");
+                outputFile = new File(SoutputFile);
+            }
+
+            new CSVDocument(inputFile, outputFile);
         }
 
     }
