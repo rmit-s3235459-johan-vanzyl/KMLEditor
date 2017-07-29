@@ -57,6 +57,20 @@
                                     </Label>
                                 </VBox>
                             </JFXRippler>
+                            <JFXRippler>
+                                <VBox styleClass="jfx-custom-vbox" onMouseClicked="#toCSV">
+                                    <Label>
+                                        <graphic>
+                                            <StackPane styleClass="tool-bar-graphic-container">
+                                                <FontAwesomeIconView glyphName="MAIL_FORWARD" size="64px"/>
+                                            </StackPane>
+                                        </graphic>
+                                    </Label>
+                                    <Label style="-fx-padding: 0 0 0 9">
+                                        To CSV
+                                    </Label>
+                                </VBox>
+                            </JFXRippler>
                         </HBox>
                     </leftItems>
                 </JFXToolbar>

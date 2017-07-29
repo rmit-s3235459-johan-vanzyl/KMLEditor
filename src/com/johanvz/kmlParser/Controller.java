@@ -17,16 +17,22 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -40,6 +46,7 @@ public class Controller implements Initializable, MapComponentInitializedListene
     private static GoogleMap map;
     private static StringProperty address = new SimpleStringProperty();
     private static Marker marker;
+    private static boolean kmlLoaded = false;
 
     public Label rowCount;
     public JFXTextField searchField;
@@ -77,6 +84,7 @@ public class Controller implements Initializable, MapComponentInitializedListene
         }
 
         mapView.addMapInializedListener(this);
+        kmlLoaded = true;
     }
 
     private void setupTreeTable() {
@@ -129,7 +137,7 @@ public class Controller implements Initializable, MapComponentInitializedListene
 
             String stringCoord = placemark.getValue().getCoordinate().get();
             String[] splits = stringCoord.split(",");
-            if(splits.length == 2) {
+            if (splits.length == 2) {
                 String latitude = splits[0];
                 String longtitude = splits[1];
                 double dLatitude = Double.parseDouble(latitude);
@@ -138,7 +146,7 @@ public class Controller implements Initializable, MapComponentInitializedListene
                 LatLong latLong = new LatLong(dLongtitude, dLatitude);
                 map.setCenter(latLong);
 
-                if(marker != null) {
+                if (marker != null) {
                     marker.setVisible(false);
                     map.removeMarker(marker);
                 }
@@ -196,20 +204,22 @@ public class Controller implements Initializable, MapComponentInitializedListene
                 new FileChooser.ExtensionFilter("Keyhole Markup Language", "*.kml"),
                 new FileChooser.ExtensionFilter("All Files", "*.*"));
         File selectedFile = fileChooser.showSaveDialog(mainStage);
+
+
         if (selectedFile != null) {
             Document xmlDocument = document.getKmlDocument();
 
             try {
                 Transformer transformer = TransformerFactory.newInstance().newTransformer();
-                if(selectedFile.exists()) {
-                    while(!selectedFile.delete()) {
+                if (selectedFile.exists()) {
+                    while (!selectedFile.delete()) {
                         warningDialogHeader.setText("Error");
                         warningDialogBody.setText("Could not delete file \"" + selectedFile.getAbsolutePath() + "\". Please ensure it is closed!");
                         warningDialog.setTransitionType(JFXDialog.DialogTransition.CENTER);
                         warningDialog.show(centerBorderPane);
                     }
                 }
-                if(selectedFile.createNewFile()) {
+                if (selectedFile.createNewFile()) {
                     snackBar.fireEvent(new JFXSnackbar.SnackbarEvent(
                             "Saved successfully",
                             "CLOSE",
@@ -262,13 +272,13 @@ public class Controller implements Initializable, MapComponentInitializedListene
 
             LatLong latLong;
 
-            if( status == GeocoderStatus.ZERO_RESULTS) {
+            if (status == GeocoderStatus.ZERO_RESULTS) {
                 warningDialogHeader.setText("Error");
                 warningDialogBody.setText("No matching address found");
                 warningDialog.setTransitionType(JFXDialog.DialogTransition.CENTER);
                 warningDialog.show(centerBorderPane);
                 return;
-            } else if( results.length > 1 ) {
+            } else if (results.length > 1) {
                 warningDialogHeader.setText("Error");
                 warningDialogBody.setText("Multiple results found, showing the first one.");
                 warningDialog.setTransitionType(JFXDialog.DialogTransition.CENTER);
@@ -281,5 +291,50 @@ public class Controller implements Initializable, MapComponentInitializedListene
             map.setCenter(latLong);
 
         });
+    }
+
+    public void toCSV() {
+        if (!kmlLoaded) {
+            snackBar.fireEvent(new JFXSnackbar.SnackbarEvent(
+                    "Please load KML first",
+                    "CLOSE",
+                    3000,
+                    true,
+                    b -> snackBar.close()
+            ));
+            return;
+        }
+
+        Stage mainStage = SharedElements.getMainStage();
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save work to KML file");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Export to CSV", "*.csv"),
+                new FileChooser.ExtensionFilter("All Files", "*.*"));
+        File selectedFile = fileChooser.showSaveDialog(mainStage);
+        if(selectedFile != null) {
+            try {
+
+                StringBuilder stringBuilder = new StringBuilder();
+
+                for (KMLDocument.Placemark placemark : document.getData()) {
+                    stringBuilder.append('"' + placemark.getName().get() + '"');
+                    stringBuilder.append(',');
+                    stringBuilder.append('"' + placemark.getDescription().get() +'"');
+                    stringBuilder.append(',');
+                    stringBuilder.append('"' + placemark.getCoordinate().get() + '"');
+                    stringBuilder.append('\n');
+                }
+
+                FileWriter fileWriter = new FileWriter(selectedFile.getAbsoluteFile());
+
+                fileWriter.append(stringBuilder.toString());
+                fileWriter.flush();
+                fileWriter.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
     }
 }
