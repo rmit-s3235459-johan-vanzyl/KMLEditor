@@ -17,6 +17,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
@@ -57,6 +58,9 @@ public class Controller implements Initializable, MapComponentInitializedListene
     public AnchorPane root;
     public StackPane centerBorderPane;
     public TextField addressTextField;
+    public JFXDialog yesNoCancelDialog;
+    public Label yesNoCanceDialogHeader;
+    public Label yesNoCanceDialogBody;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -353,6 +357,10 @@ public class Controller implements Initializable, MapComponentInitializedListene
 
             new CSVDocument(inputFile, outputFile);
         }
+
+    }
+
+    public void CSVtoKMZ() {
 
     }
 }

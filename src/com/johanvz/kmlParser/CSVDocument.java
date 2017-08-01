@@ -1,6 +1,8 @@
 package com.johanvz.kmlParser;
 
 import java.io.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class CSVDocument {
     private static final String KMLSTART =
@@ -67,6 +69,25 @@ public class CSVDocument {
             fileWriter.append(KMLEND);
             fileWriter.flush();
             fileWriter.close();
+
+            // kmz
+            FileOutputStream fileOutputStream = new FileOutputStream(outputFile.getAbsolutePath().replace(".kml", ".kmz"));
+            ZipOutputStream zipOutputStream = new ZipOutputStream(fileOutputStream);
+            ZipEntry zipEntry = new ZipEntry(outputFile.getName());
+
+            zipOutputStream.putNextEntry(zipEntry);
+            FileInputStream fileInputStream = new FileInputStream(outputFile.getAbsolutePath());
+
+            int length;
+            byte[] buffer = new byte[1024];
+            while((length = fileInputStream.read(buffer)) > 0) {
+                zipOutputStream.write(buffer, 0, length);
+            }
+
+            fileInputStream.close();
+            zipOutputStream.closeEntry();
+            zipOutputStream.close();
+
 
         } catch (IOException e) {
             e.printStackTrace();

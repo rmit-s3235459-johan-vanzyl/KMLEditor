@@ -80,8 +80,8 @@
                                             </StackPane>
                                         </graphic>
                                     </Label>
-                                    <Label style="-fx-padding: 0 0 0 9">
-                                        CSV to KML
+                                    <Label style="-fx-padding: 0 0 0 2">
+                                        CSV to KML/Z
                                     </Label>
                                 </VBox>
                             </JFXRippler>
@@ -144,6 +144,24 @@
             </actions>
         </JFXDialogLayout>
     </JFXDialog>
+
+    <JFXDialog fx:id="yesNoCancelDialog">
+        <JFXDialogLayout>
+            <heading>
+                <Label fx:id="yesNoCanceDialogHeader">Error</Label>
+            </heading>
+            <body>
+                <Label fx:id="yesNoCanceDialogBody">
+                    Please ensure KML has been loaded!
+                </Label>
+            </body>
+            <actions>
+                <JFXButton styleClass="dialog-accept" onMouseClicked="#closeDialog">OKAY</JFXButton>
+            </actions>
+        </JFXDialogLayout>
+    </JFXDialog>
+
+
 
     <JFXSnackbar fx:id="snackBar" prefWidth="300"/>
 </AnchorPane>
