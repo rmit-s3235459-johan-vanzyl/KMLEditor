@@ -51,11 +51,10 @@ public class CSVDocument {
 
             String line;
             while ((line = bufferedReader.readLine()) != null) {
-                String[] parts = line.split(",");
+                String[] parts = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
                 String name = parts[0].replace("\"", "");
                 String description = parts[1].replace("\"", "");
-                String coordinate = parts[2].replace("\"", "");
-                if (parts.length > 3) coordinate = coordinate.concat(",").concat(parts[3].replace("\"", ""));
+                String coordinate = (line.length() > 2) ? parts[2].replace("\"", "") : "NULL";
 
                 fileWriter.append(KMLELEMENT
                         .replace("{name}", name)

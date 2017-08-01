@@ -17,16 +17,11 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
@@ -137,7 +132,7 @@ public class Controller implements Initializable, MapComponentInitializedListene
 
             String stringCoord = placemark.getValue().getCoordinate().get();
             String[] splits = stringCoord.split(",");
-            if (splits.length == 2) {
+            if (splits.length >= 2) {
                 String latitude = splits[0];
                 String longtitude = splits[1];
                 double dLatitude = Double.parseDouble(latitude);
@@ -307,7 +302,7 @@ public class Controller implements Initializable, MapComponentInitializedListene
 
         Stage mainStage = SharedElements.getMainStage();
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Save work to KML file");
+        fileChooser.setTitle("Save work to CSV file");
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("CSV", "*.csv"),
                 new FileChooser.ExtensionFilter("All Files", "*.*"));
