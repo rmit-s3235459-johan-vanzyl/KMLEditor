@@ -1,6 +1,8 @@
 package com.johanvz.kmlParser;
 
+import com.jfoenix.controls.JFXDialog;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
@@ -14,7 +16,7 @@ public final class SharedElements {
     }
 
     public static void setMainStage(Stage mainStage) {
-        if(SharedElements.mainStage == null) SharedElements.mainStage = mainStage;
+        if (SharedElements.mainStage == null) SharedElements.mainStage = mainStage;
     }
 
     public static Scene getMainScene() {
@@ -22,7 +24,7 @@ public final class SharedElements {
     }
 
     public static void setMainScene(Scene mainScene) {
-        if(SharedElements.mainScene == null) SharedElements.mainScene = mainScene;
+        if (SharedElements.mainScene == null) SharedElements.mainScene = mainScene;
     }
 
     public static StackPane getMainStackPane() {

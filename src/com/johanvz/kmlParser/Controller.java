@@ -15,6 +15,8 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
@@ -31,6 +33,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Collections;
 import java.util.ResourceBundle;
 import java.util.function.Function;
 
@@ -58,32 +61,86 @@ public class Controller implements Initializable, MapComponentInitializedListene
     public AnchorPane root;
     public StackPane centerBorderPane;
     public TextField addressTextField;
-    public JFXDialog yesNoCancelDialog;
-    public Label yesNoCanceDialogHeader;
-    public Label yesNoCanceDialogBody;
+    public JFXDialog yesNoDialog;
+    public Label yesNoDialogHeader;
+    public Label yesNoDialogDialogBody;
+    public JFXButton yesNoDialogYes;
+    public JFXButton yesNoDialogNo;
+    public JFXDialog convertDialog;
+    public JFXRadioButton optInputKML;
+    public JFXRadioButton optInputKMZ;
+    public JFXRadioButton optInputCSV;
+    public JFXRadioButton optOutputKML;
+    public JFXRadioButton optOutputKMZ;
+    public JFXRadioButton optOutputCSV;
+
+    private static JFXDialog sWarningDialog;
+    private static Label sWarningDialogHeader;
+    private static Label sWarningDialogBody;
+    private static StackPane sCenterBorderPane;
+    private static JFXSnackbar sSnackBar;
+    private static JFXDialog sYesNoDialog;
+    private static Label sYesNoDialogHeader;
+    private static Label sYesNoDialogDialogBody;
+    private static JFXButton sYesNoDialogYes;
+    private static JFXButton sYesNoDialogNo;
+    private static Controller controller;
+    private static File convertInputFile = null;
+    private static File convertOutputFile = null;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         snackBar.registerSnackbarContainer(root);
         mapView.addMapInializedListener(this);
         address.bind(addressTextField.textProperty());
+
+        sWarningDialog = warningDialog;
+        sWarningDialogHeader = warningDialogHeader;
+        sWarningDialogBody = warningDialogBody;
+        sCenterBorderPane = centerBorderPane;
+        sSnackBar = snackBar;
+        sYesNoDialogHeader = yesNoDialogHeader;
+        sYesNoDialogDialogBody = yesNoDialogDialogBody;
+        sYesNoDialogYes = yesNoDialogYes;
+        sYesNoDialogNo = yesNoDialogNo;
+        sYesNoDialog = yesNoDialog;
+
+        controller = this;
+
     }
 
-    public void importKML() {
+    public void openFile() {
         Stage mainStage = SharedElements.getMainStage();
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Select KML to import");
+        fileChooser.setTitle("Select file to open");
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("Keyhole Markup Language", "*.kml"),
-                new FileChooser.ExtensionFilter("All Files", "*.*"));
-        File selectedFile = fileChooser.showOpenDialog(mainStage);
-        if (selectedFile != null) {
-            Controller.document = new KMLDocument(selectedFile);
-            setupTreeTable();
-        }
+                new FileChooser.ExtensionFilter("Keyhole Markup Language Zipped", "*.kmz"),
+                new FileChooser.ExtensionFilter("Comma-separated values", "*.csv*"));
+        File inputFile = fileChooser.showOpenDialog(mainStage);
+        if (inputFile != null) {
 
-        mapView.addMapInializedListener(this);
-        kmlLoaded = true;
+            if (inputFile.getName().substring(inputFile.getName().length() - 3).equals("csv")) {
+                Controller.showYesNoDialog(
+                        "Warning",
+                        "This will only work when csv columns are in the following format |Name|Description|Coordinate|" +
+                                " \nDo you wish to continue?",
+                        event -> {
+                            sYesNoDialog.close();
+                            Controller.document = new KMLDocument(inputFile);
+                            setupTreeTable();
+                            mapView.addMapInializedListener(controller);
+                            kmlLoaded = true;
+                        },
+                        event -> sYesNoDialog.close()
+                );
+            } else {
+                Controller.document = new KMLDocument(inputFile);
+                setupTreeTable();
+                mapView.addMapInializedListener(this);
+                kmlLoaded = true;
+            }
+        }
     }
 
     private void setupTreeTable() {
@@ -187,61 +244,35 @@ public class Controller implements Initializable, MapComponentInitializedListene
         });
     }
 
-    public void saveKML() {
+    public void saveAS() {
         if (document == null) {
-            warningDialogHeader.setText("Error");
-            warningDialogBody.setText("Please ensure KML has been loaded!");
-            warningDialog.setTransitionType(JFXDialog.DialogTransition.CENTER);
-            warningDialog.show(centerBorderPane);
+            showWarningDialog("Error", "Please ensure KML has been loaded!");
             return;
         }
 
         Stage mainStage = SharedElements.getMainStage();
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Save work to KML file");
+        fileChooser.setTitle("Save as...");
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("Keyhole Markup Language", "*.kml"),
-                new FileChooser.ExtensionFilter("All Files", "*.*"));
+                new FileChooser.ExtensionFilter("Keyhole Markup Language Zipped", "*.kmz"),
+                new FileChooser.ExtensionFilter("Comma-separated values", "*.csv*"));
         File selectedFile = fileChooser.showSaveDialog(mainStage);
 
+        if (selectedFile == null) return;
 
-        if (selectedFile != null) {
-            Document xmlDocument = document.getKmlDocument();
-
-            try {
-                Transformer transformer = TransformerFactory.newInstance().newTransformer();
-                if (selectedFile.exists()) {
-                    while (!selectedFile.delete()) {
-                        warningDialogHeader.setText("Error");
-                        warningDialogBody.setText("Could not delete file \"" + selectedFile.getAbsolutePath() + "\". Please ensure it is closed!");
-                        warningDialog.setTransitionType(JFXDialog.DialogTransition.CENTER);
-                        warningDialog.show(centerBorderPane);
-                    }
-                }
-                if (selectedFile.createNewFile()) {
-                    snackBar.fireEvent(new JFXSnackbar.SnackbarEvent(
-                            "Saved successfully",
-                            "CLOSE",
-                            3000,
-                            true,
-                            b -> snackBar.close()
-                    ));
-                } else {
-                    snackBar.fireEvent(new JFXSnackbar.SnackbarEvent(
-                            "Unsuccessful",
-                            "CLOSE",
-                            3000,
-                            true,
-                            b -> snackBar.close()
-                    ));
-                }
-                Result output = new StreamResult(selectedFile);
-                Source input = new DOMSource(xmlDocument);
-                transformer.transform(input, output);
-            } catch (IOException | TransformerException e) {
-                e.printStackTrace();
-            }
+        switch (selectedFile.getName().substring(selectedFile.getName().length() - 3)) {
+            case "kml":
+                FileHandler.saveToKML(selectedFile, document.getKmlDocument());
+                break;
+            case "kmz":
+                FileHandler.saveToKMZ(selectedFile, document.getKmlDocument());
+                break;
+            case "csv":
+                FileHandler.saveDocumentToCSV(document.getData(), selectedFile);
+                break;
         }
+
     }
 
     public void closeDialog() {
@@ -292,50 +323,8 @@ public class Controller implements Initializable, MapComponentInitializedListene
         });
     }
 
-    public void toCSV() {
-        if (!kmlLoaded) {
-            snackBar.fireEvent(new JFXSnackbar.SnackbarEvent(
-                    "Please load KML first",
-                    "CLOSE",
-                    3000,
-                    true,
-                    b -> snackBar.close()
-            ));
-            return;
-        }
-
-        Stage mainStage = SharedElements.getMainStage();
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Save work to CSV file");
-        fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("CSV", "*.csv"),
-                new FileChooser.ExtensionFilter("All Files", "*.*"));
-        File selectedFile = fileChooser.showSaveDialog(mainStage);
-        if(selectedFile != null) {
-            try {
-                StringBuilder stringBuilder = new StringBuilder();
-
-                for (KMLDocument.Placemark placemark : document.getData()) {
-                    stringBuilder.append('"').append(placemark.getName().get()).append('"');
-                    stringBuilder.append(',');
-                    stringBuilder.append('"').append(placemark.getDescription().get()).append('"');
-                    stringBuilder.append(',');
-                    stringBuilder.append('"').append(placemark.getCoordinate().get()).append('"');
-                    stringBuilder.append('\n');
-                }
-
-                FileWriter fileWriter = new FileWriter(selectedFile.getAbsoluteFile());
-
-                String toWrite = stringBuilder.toString().replace("&", "&amp;");
-
-                fileWriter.append(toWrite);
-                fileWriter.flush();
-                fileWriter.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
+    public void showConvertFilesDialog() {
+        convertDialog.show(sCenterBorderPane);
     }
 
     public void CSVtoKML() {
@@ -347,20 +336,142 @@ public class Controller implements Initializable, MapComponentInitializedListene
                 new FileChooser.ExtensionFilter("CSV", "*.csv"),
                 new FileChooser.ExtensionFilter("All Files", "*.*"));
         File inputFile = fileChooser.showOpenDialog(mainStage);
-        if(inputFile != null) {
+        if (inputFile != null) {
             String SoutputFile = inputFile.getAbsolutePath().replace(".csv", ".kml");
             File outputFile = new File(SoutputFile);
-            while(outputFile.exists()) {
+            while (outputFile.exists()) {
                 SoutputFile = SoutputFile.replace(".kml", " copy.kml");
                 outputFile = new File(SoutputFile);
             }
 
             new CSVDocument(inputFile, outputFile);
         }
-
     }
 
-    public void CSVtoKMZ() {
+    public static void showWarningDialog(String headerDialog, String bodyDialog) {
+        if (sWarningDialogHeader == null ||
+                sWarningDialogBody == null ||
+                sWarningDialog == null ||
+                sCenterBorderPane == null) return;
+        sWarningDialogHeader.setText(headerDialog);
+        sWarningDialogBody.setText(bodyDialog);
+        sWarningDialog.setTransitionType(JFXDialog.DialogTransition.CENTER);
+        sWarningDialog.show(sCenterBorderPane);
+    }
+
+    public static void showSnackBar(String message) {
+        if (sSnackBar == null) return;
+
+        sSnackBar.fireEvent(new JFXSnackbar.SnackbarEvent(
+                message,
+                "CLOSE",
+                3000,
+                true,
+                b -> sSnackBar.close()
+        ));
+    }
+
+    public static void showYesNoDialog(String header, String body,
+                                       EventHandler<ActionEvent> yesEvent,
+                                       EventHandler<ActionEvent> noEvent) {
+        sYesNoDialogHeader.setText(header);
+        sYesNoDialogDialogBody.setText(body);
+
+        sYesNoDialogYes.setOnAction(yesEvent);
+        sYesNoDialogNo.setOnAction(noEvent);
+        sYesNoDialog.setTransitionType(JFXDialog.DialogTransition.CENTER);
+        sYesNoDialog.show(sCenterBorderPane);
+    }
+
+    public void closeConvertDialog() {
+        convertDialog.close();
+    }
+
+    public void convertSelectInput() {
+        Stage mainStage = SharedElements.getMainStage();
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select file to open");
+        if(optInputKML.isSelected()) {
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Keyhole Markup Language", "*.kml"));
+        } else if (optInputKMZ.isSelected()) {
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Keyhole Markup Language Zipped", "*.kmz"));
+        } else if (optInputCSV.isSelected()) {
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Comma-separated values", "*.csv*"));
+        }
+
+        File inputFile = fileChooser.showOpenDialog(mainStage);
+        if(inputFile != null) {
+            convertInputFile = inputFile;
+        }
+    }
+
+    public void convertSelectOutput() {
+        Stage mainStage = SharedElements.getMainStage();
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select file to convert to");
+        if(optOutputKML.isSelected()) {
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Keyhole Markup Language", "*.kml"));
+        } else if (optOutputKMZ.isSelected()) {
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Keyhole Markup Language Zipped", "*.kmz"));
+        } else if (optOutputCSV.isSelected()) {
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Comma-separated values", "*.csv*"));
+        }
+
+        File outputFile = fileChooser.showSaveDialog(mainStage);
+        if(outputFile != null) {
+            convertOutputFile = outputFile;
+        }
+    }
+
+    public void convertFiles() {
+        if(convertInputFile == null) {
+            Controller.showWarningDialog("Error", "Please select input source file");
+            return;
+        }
+        if(convertOutputFile == null) {
+            Controller.showWarningDialog("Error", "Please select output source file");
+            return;
+        }
+
+        Globals.FileTypes inputType;
+        Globals.FileTypes outputType;
+        switch (convertInputFile.getName().substring(convertInputFile.getName().length() - 3)) {
+            case "kml":
+                inputType = Globals.FileTypes.KML;
+                break;
+            case "kmz":
+                inputType = Globals.FileTypes.KMZ;
+                break;
+            case "csv":
+                inputType = Globals.FileTypes.CSV;
+                break;
+            default:
+                Controller.showSnackBar("Unknown Error Occurred");
+                return;
+        }
+        switch (convertOutputFile.getName().substring(convertOutputFile.getName().length() - 3)) {
+            case "kml":
+                outputType = Globals.FileTypes.KML;
+                break;
+            case "kmz":
+                outputType = Globals.FileTypes.KMZ;
+                break;
+            case "csv":
+                outputType = Globals.FileTypes.CSV;
+                break;
+            default:
+                Controller.showSnackBar("Unknown Error Occurred");
+                return;
+        }
+
+        if(inputType == outputType) {
+            Controller.showWarningDialog("Don't be silly",
+                    "Please select different file types" +
+                    " as input/output appear to be the same!");
+            return;
+        }
+
+        System.out.println("Good to go");
 
     }
 }

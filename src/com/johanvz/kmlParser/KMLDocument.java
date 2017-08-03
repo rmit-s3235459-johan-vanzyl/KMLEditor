@@ -28,58 +28,67 @@ public class KMLDocument {
     }
 
     private void loadFile() {
-        DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder documentBuilder;
-        try {
-            documentBuilder = documentBuilderFactory.newDocumentBuilder();
-            kmlDocument = documentBuilder.parse(file);
-            kmlDocument.getDocumentElement().normalize();
 
-            NodeList nodeList = kmlDocument.getElementsByTagName("Placemark");
-            for (int i = 0; i < nodeList.getLength(); i++) {
-                Node node = nodeList.item(i);
-                Element element = (Element) node;
-                NodeList names = element.getElementsByTagName("name");
-                if(names.getLength() > 0) {
-                    NodeList description = element.getElementsByTagName("description");
-                    NodeList coordinates = element.getElementsByTagName("coordinates");
-
-                    Node name = names.item(0);
-                    Node descriptionNode;
-                    Node coordinateNode;
-
-                    if(description.getLength() > 0) {
-                        descriptionNode = description.item(0);
-                    } else {
-                        Element newDescription = kmlDocument.createElement("description");
-                        newDescription.setTextContent("NULL");
-                        node.appendChild(newDescription);
-                        descriptionNode = newDescription;
-                    }
-
-                    if(coordinates.getLength() > 0) {
-                        coordinateNode = coordinates.item(0);
-                    } else {
-                        Element newCoordinate = kmlDocument.createElement("coordinates");
-                        newCoordinate.setTextContent("NULL");
-                        node.appendChild(newCoordinate);
-                        coordinateNode = newCoordinate;
-                    }
-
-                    data.add(new Placemark(
-                            name.getTextContent(),
-                            descriptionNode.getTextContent(),
-                            coordinateNode.getTextContent(),
-                            name,
-                            descriptionNode,
-                            coordinateNode
-                    ));
-                }
-            }
-
-        } catch (ParserConfigurationException | SAXException | IOException e) {
-            e.printStackTrace();
+        switch (file.getName().substring(file.getName().length() - 3)) {
+            case "kml":
+                kmlDocument = FileHandler.openFromKML(file);
+                break;
+            case "kmz":
+                kmlDocument = FileHandler.openFromKMZ(file);
+                break;
+            case "csv":
+                kmlDocument = FileHandler.openFromCSV(file);
+                break;
         }
+
+        if(kmlDocument == null) {
+            Controller.showSnackBar("Could not load document :(");
+            return;
+        }
+
+        NodeList nodeList = kmlDocument.getElementsByTagName("Placemark");
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Node node = nodeList.item(i);
+            Element element = (Element) node;
+            NodeList names = element.getElementsByTagName("name");
+            if(names.getLength() > 0) {
+                NodeList description = element.getElementsByTagName("description");
+                NodeList coordinates = element.getElementsByTagName("coordinates");
+
+                Node name = names.item(0);
+                Node descriptionNode;
+                Node coordinateNode;
+
+                if(description.getLength() > 0) {
+                    descriptionNode = description.item(0);
+                } else {
+                    Element newDescription = kmlDocument.createElement("description");
+                    newDescription.setTextContent("NULL");
+                    node.appendChild(newDescription);
+                    descriptionNode = newDescription;
+                }
+
+                if(coordinates.getLength() > 0) {
+                    coordinateNode = coordinates.item(0);
+                } else {
+                    Element newCoordinate = kmlDocument.createElement("coordinates");
+                    newCoordinate.setTextContent("NULL");
+                    node.appendChild(newCoordinate);
+                    coordinateNode = newCoordinate;
+                }
+
+                data.add(new Placemark(
+                        name.getTextContent(),
+                        descriptionNode.getTextContent(),
+                        coordinateNode.getTextContent(),
+                        name,
+                        descriptionNode,
+                        coordinateNode
+                ));
+            }
+        }
+
+        Controller.showSnackBar("Successfully Loaded");
     }
 
     public ObservableList<Placemark> getData() {

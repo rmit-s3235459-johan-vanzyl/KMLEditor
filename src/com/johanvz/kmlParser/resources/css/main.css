@@ -283,8 +283,20 @@
 }
 
 
+.dialog-green {
+    -fx-text-fill: #44f42f;
+    -fx-font-weight: BOLD;
+    -fx-padding: 0.7em 0.8em;
+}
+
 .dialog-accept {
     -fx-text-fill: #03A9F4;
+    -fx-font-weight: BOLD;
+    -fx-padding: 0.7em 0.8em;
+}
+
+.dialog-reject {
+    -fx-text-fill: #f43c43;
     -fx-font-weight: BOLD;
     -fx-padding: 0.7em 0.8em;
 }
@@ -310,4 +322,59 @@
 
 .jfx-snackbar-action {
     -fx-text-fill: accent-color;
+}
+
+
+/*******************************************************************************
+ *                                                                             *
+ * JFX Radio Button                                                            *
+ *                                                                             *
+ ******************************************************************************/
+
+.jfx-radio-button .radio {
+    -fx-stroke-width: 2.0px;
+    -fx-fill: transparent;
+}
+
+.jfx-radio-button .dot {
+    -fx-fill: #0F9D58;
+}
+
+.custom-jfx-radio-button {
+    -fx-font-size: 16.0px;
+}
+
+.custom-jfx-radio-button .radio {
+    -fx-stroke-width: 2.0px;
+    -fx-fill: transparent;
+}
+
+.custom-jfx-radio-button-blue {
+    -fx-text-fill: #5264AE;
+    -jfx-selected-color: #5264AE;
+    -jfx-unselected-color: #212121;
+}
+
+.custom-jfx-radio-button-red {
+    -fx-text-fill: #f44336;
+    -jfx-selected-color: #f44336;
+    -jfx-unselected-color: #b71c1c;
+}
+
+.custom-jfx-radio-button-green {
+    -fx-text-fill: #4caf50;
+    -jfx-selected-color: #4caf50;
+    -jfx-unselected-color: #1b5e20;
+}
+
+.radio-button-title-label {
+    -fx-font-size: 16.0px;
+    -fx-padding: 14.0 0.0 -20.0 0.0;
+    -fx-text-fill: rgba(0.0, 0.0, 0.0, 0.87);
+}
+
+.vbox_split {
+    -fx-border-width: 1px;
+    -fx-border-color: divider-color;
+    -fx-padding: 0px 50px;
 }

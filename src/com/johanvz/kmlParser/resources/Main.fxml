@@ -20,6 +20,8 @@
 <?import com.jfoenix.controls.JFXTextField?>
 <?import com.jfoenix.controls.JFXTreeTableColumn?>
 <?import javafx.scene.control.TextField?>
+<?import com.jfoenix.controls.JFXRadioButton?>
+<?import javafx.scene.control.ToggleGroup?>
 <AnchorPane fx:id="root" minWidth="1280" minHeight="800" xmlns="http://javafx.com/javafx/8.0.121"
             xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.johanvz.kmlParser.Controller">
     <children>
@@ -29,8 +31,8 @@
                     <leftItems>
                         <HBox pickOnBounds="false">
                             <JFXRippler>
-                                <VBox styleClass="jfx-custom-vbox" onMouseClicked="#importKML"
-                                      style="-fx-padding: 5 0 0 15">
+                                <VBox styleClass="jfx-custom-vbox" onMouseClicked="#openFile"
+                                      style="-fx-padding: 5 0 0 10">
                                     <Label>
                                         <graphic>
                                             <StackPane styleClass="tool-bar-graphic-container">
@@ -38,13 +40,13 @@
                                             </StackPane>
                                         </graphic>
                                     </Label>
-                                    <Label>
-                                        Import KML
+                                    <Label style="-fx-padding: 0 0 0 15">
+                                        Open
                                     </Label>
                                 </VBox>
                             </JFXRippler>
                             <JFXRippler>
-                                <VBox styleClass="jfx-custom-vbox" onMouseClicked="#saveKML">
+                                <VBox styleClass="jfx-custom-vbox" onMouseClicked="#saveAS">
                                     <Label>
                                         <graphic>
                                             <StackPane styleClass="tool-bar-graphic-container">
@@ -52,27 +54,13 @@
                                             </StackPane>
                                         </graphic>
                                     </Label>
-                                    <Label style="-fx-padding: 0 0 0 7">
-                                        Save KML
+                                    <Label style="-fx-padding: 0 0 0 13">
+                                        Save as
                                     </Label>
                                 </VBox>
                             </JFXRippler>
                             <JFXRippler>
-                                <VBox styleClass="jfx-custom-vbox" onMouseClicked="#toCSV">
-                                    <Label>
-                                        <graphic>
-                                            <StackPane styleClass="tool-bar-graphic-container">
-                                                <FontAwesomeIconView glyphName="MAIL_FORWARD" size="64px"/>
-                                            </StackPane>
-                                        </graphic>
-                                    </Label>
-                                    <Label style="-fx-padding: 0 0 0 9">
-                                        To CSV
-                                    </Label>
-                                </VBox>
-                            </JFXRippler>
-                            <JFXRippler>
-                                <VBox styleClass="jfx-custom-vbox" onMouseClicked="#CSVtoKML">
+                                <VBox styleClass="jfx-custom-vbox" onMouseClicked="#showConvertFilesDialog">
                                     <Label>
                                         <graphic>
                                             <StackPane styleClass="tool-bar-graphic-container">
@@ -80,8 +68,8 @@
                                             </StackPane>
                                         </graphic>
                                     </Label>
-                                    <Label style="-fx-padding: 0 0 0 2">
-                                        CSV to KML/Z
+                                    <Label style="-fx-padding: 0 0 0 13">
+                                        Convert
                                     </Label>
                                 </VBox>
                             </JFXRippler>
@@ -120,8 +108,9 @@
                                 <GoogleMapView fx:id="mapView" prefHeight="500.0" prefWidth="700.0"
                                                AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0.0"
                                                AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0.0"/>
-                                <TextField fx:id="addressTextField" promptText="Search Address..." prefWidth="300"
-                                           AnchorPane.rightAnchor="10" AnchorPane.topAnchor="10" onAction="#searchAddress"/>
+                                <TextField fx:id="addressTextField" promptText="Search Address..." prefWidth="150"
+                                           AnchorPane.rightAnchor="10" AnchorPane.topAnchor="10"
+                                           onAction="#searchAddress"/>
                             </children>
                         </AnchorPane>
                     </items>
@@ -145,23 +134,79 @@
         </JFXDialogLayout>
     </JFXDialog>
 
-    <JFXDialog fx:id="yesNoCancelDialog">
+    <JFXDialog fx:id="yesNoDialog">
         <JFXDialogLayout>
             <heading>
-                <Label fx:id="yesNoCanceDialogHeader">Error</Label>
+                <Label fx:id="yesNoDialogHeader">Error</Label>
             </heading>
             <body>
-                <Label fx:id="yesNoCanceDialogBody">
+                <Label fx:id="yesNoDialogDialogBody">
                     Please ensure KML has been loaded!
                 </Label>
             </body>
             <actions>
-                <JFXButton styleClass="dialog-accept" onMouseClicked="#closeDialog">OKAY</JFXButton>
+                <JFXButton styleClass="dialog-reject" fx:id="yesNoDialogNo">NO</JFXButton>
+                <JFXButton styleClass="dialog-accept" fx:id="yesNoDialogYes">YES</JFXButton>
             </actions>
         </JFXDialogLayout>
     </JFXDialog>
 
+    <JFXDialog fx:id="convertDialog">
+        <JFXDialogLayout>
+            <heading>
+                <Label style="-fx-padding: 0 0 10px 0">Choose which format to convert to and from</Label>
+            </heading>
+            <body>
+                <HBox prefWidth="500" prefHeight="200" alignment="BASELINE_CENTER">
+                    <VBox spacing="30" styleClass="vbox_split">
+                        <children>
+                            <Label styleClass="radio-button-title-label">Input File</Label>
 
+                            <JFXRadioButton fx:id="optInputKML" selected="true" text="KML"
+                                            styleClass="custom-jfx-radio-button">
+                                <toggleGroup>
+                                    <ToggleGroup fx:id="toggleGroup1"/>
+                                </toggleGroup>
+                            </JFXRadioButton>
+                            <JFXRadioButton fx:id="optInputKMZ"
+                                            text="KMZ" toggleGroup="$toggleGroup1" styleClass="custom-jfx-radio-button"/>
+                            <JFXRadioButton fx:id="optInputCSV"
+                                            text="CSV" toggleGroup="$toggleGroup1" styleClass="custom-jfx-radio-button"/>
+                            <JFXButton styleClass="dialog-accept" onMouseClicked="#convertSelectInput">LOAD</JFXButton>
+                        </children>
+                    </VBox>
+                    <VBox style="-fx-min-width: 50px" spacing="30">
+                        <Label> </Label>
+                        <Label> </Label>
+                        <Label> </Label>
+                        <Label> </Label>
+                        <Label> </Label>
+                    </VBox>
+                    <VBox spacing="30" styleClass="vbox_split">
+                        <children>
+                            <Label styleClass="radio-button-title-label">Output File</Label>
+
+                            <JFXRadioButton fx:id="optOutputKML" selected="true" text="KML"
+                                            styleClass="custom-jfx-radio-button">
+                                <toggleGroup>
+                                    <ToggleGroup fx:id="toggleGroup2"/>
+                                </toggleGroup>
+                            </JFXRadioButton>
+                            <JFXRadioButton fx:id="optOutputKMZ"
+                                            text="KMZ" toggleGroup="$toggleGroup2" styleClass="custom-jfx-radio-button"/>
+                            <JFXRadioButton fx:id="optOutputCSV"
+                                            text="CSV" toggleGroup="$toggleGroup2" styleClass="custom-jfx-radio-button"/>
+                            <JFXButton styleClass="dialog-accept" onMouseClicked="#convertSelectOutput">SELECT</JFXButton>
+                        </children>
+                    </VBox>
+                </HBox>
+            </body>
+            <actions>
+                <JFXButton styleClass="dialog-reject" onMouseClicked="#closeConvertDialog">CANCEL</JFXButton>
+                <JFXButton styleClass="dialog-green" onMouseClicked="#convertFiles">CONVERT</JFXButton>
+            </actions>
+        </JFXDialogLayout>
+    </JFXDialog>
 
     <JFXSnackbar fx:id="snackBar" prefWidth="300"/>
 </AnchorPane>
