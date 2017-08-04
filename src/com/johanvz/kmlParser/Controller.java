@@ -6,6 +6,8 @@ import com.jfoenix.controls.cells.editors.base.GenericEditableTreeTableCell;
 import com.jfoenix.controls.datamodels.treetable.RecursiveTreeObject;
 import com.lynden.gmapsfx.GoogleMapView;
 import com.lynden.gmapsfx.MapComponentInitializedListener;
+import com.lynden.gmapsfx.javascript.event.GMapMouseEvent;
+import com.lynden.gmapsfx.javascript.event.UIEventType;
 import com.lynden.gmapsfx.javascript.object.*;
 import com.lynden.gmapsfx.service.geocoding.GeocoderStatus;
 import com.lynden.gmapsfx.service.geocoding.GeocodingResult;
@@ -15,16 +17,23 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
@@ -33,7 +42,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.ResourceBundle;
 import java.util.function.Function;
 
@@ -44,8 +55,10 @@ public class Controller implements Initializable, MapComponentInitializedListene
     private static GeocodingService geocodingService;
     private static GoogleMap map;
     private static StringProperty address = new SimpleStringProperty();
-    private static Marker marker;
-    private static boolean kmlLoaded = false;
+    private static final ArrayList<Marker> markers = new ArrayList<>();
+    private static Controller controller;
+    private static File convertInputFile = null;
+    private static File convertOutputFile = null;
 
     public Label rowCount;
     public JFXTextField searchField;
@@ -73,7 +86,10 @@ public class Controller implements Initializable, MapComponentInitializedListene
     public JFXRadioButton optOutputKML;
     public JFXRadioButton optOutputKMZ;
     public JFXRadioButton optOutputCSV;
+    public JFXDialog addPlaceMarkDialog;
+    public JFXTextField addPlaceMarkDialogName;
 
+    // static content for other classes
     private static JFXDialog sWarningDialog;
     private static Label sWarningDialogHeader;
     private static Label sWarningDialogBody;
@@ -84,9 +100,8 @@ public class Controller implements Initializable, MapComponentInitializedListene
     private static Label sYesNoDialogDialogBody;
     private static JFXButton sYesNoDialogYes;
     private static JFXButton sYesNoDialogNo;
-    private static Controller controller;
-    private static File convertInputFile = null;
-    private static File convertOutputFile = null;
+    public JFXTextField addPlaceMarkDialogCoordinate;
+    public JFXTextField addPlaceMarkDialogDescription;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -130,7 +145,6 @@ public class Controller implements Initializable, MapComponentInitializedListene
                             Controller.document = new KMLDocument(inputFile);
                             setupTreeTable();
                             mapView.addMapInializedListener(controller);
-                            kmlLoaded = true;
                         },
                         event -> sYesNoDialog.close()
                 );
@@ -138,7 +152,6 @@ public class Controller implements Initializable, MapComponentInitializedListene
                 Controller.document = new KMLDocument(inputFile);
                 setupTreeTable();
                 mapView.addMapInializedListener(this);
-                kmlLoaded = true;
             }
         }
     }
@@ -146,6 +159,7 @@ public class Controller implements Initializable, MapComponentInitializedListene
     private void setupTreeTable() {
         setupCellValueFactory(name, KMLDocument.Placemark::getName);
         setupCellValueFactory(description, KMLDocument.Placemark::getDescription);
+        setupCellValueFactory(coordinate, KMLDocument.Placemark::getCoordinate);
         setupCellValueFactory(coordinate, KMLDocument.Placemark::getCoordinate);
 
         // add editors
@@ -176,7 +190,10 @@ public class Controller implements Initializable, MapComponentInitializedListene
             placemark.getNodeCoordinate().setTextContent(t.getNewValue());
         });
 
-        treeTableView.setRoot(new RecursiveTreeItem<>(document.getData(), RecursiveTreeObject::getChildren));
+        RecursiveTreeItem<KMLDocument.Placemark> recursiveTreeItem = new RecursiveTreeItem<>(document.getData(), RecursiveTreeObject::getChildren);
+
+        treeTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        treeTableView.setRoot(recursiveTreeItem);
         treeTableView.setShowRoot(false);
         treeTableView.setEditable(true);
         rowCount.textProperty()
@@ -187,40 +204,46 @@ public class Controller implements Initializable, MapComponentInitializedListene
                 .addListener(setupSearchField(treeTableView));
 
         treeTableView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+
+            markers.forEach(e -> {
+                e.setVisible(false);
+                map.removeMarker(e);
+                e = null;
+            });
+
             TreeTableView.TreeTableViewSelectionModel<KMLDocument.Placemark> selectionModel = treeTableView.getSelectionModel();
+            ObservableList<TreeTablePosition<KMLDocument.Placemark, ?>> selectedList = selectionModel.getSelectedCells();
+            final LatLong[] latLong = {null};
+            selectedList.forEach(e -> {
+                KMLDocument.Placemark placemark = e.getTreeItem().getValue();
+                String stringCoord = placemark.getCoordinate().get();
+                String[] splits = stringCoord.split(",");
+                if (splits.length >= 2) {
+                    String latitude = splits[0];
+                    String longtitude = splits[1];
+                    double dLatitude = Double.parseDouble(latitude);
+                    double dLongtitude = Double.parseDouble(longtitude);
 
-            TreeItem<KMLDocument.Placemark> placemark = selectionModel.getSelectedItem();
+                    MarkerOptions markerOptions = new MarkerOptions();
+                    latLong[0] = new LatLong(dLongtitude, dLatitude);
+                    markerOptions.position(latLong[0]);
+                    Marker marker = new Marker(markerOptions);
+                    map.addMarker(marker);
 
-            String stringCoord = placemark.getValue().getCoordinate().get();
-            String[] splits = stringCoord.split(",");
-            if (splits.length >= 2) {
-                String latitude = splits[0];
-                String longtitude = splits[1];
-                double dLatitude = Double.parseDouble(latitude);
-                double dLongtitude = Double.parseDouble(longtitude);
+                    markers.add(marker);
 
-                LatLong latLong = new LatLong(dLongtitude, dLatitude);
-                map.setCenter(latLong);
-
-                if (marker != null) {
-                    marker.setVisible(false);
-                    map.removeMarker(marker);
+                } else {
+                    snackBar.fireEvent(new JFXSnackbar.SnackbarEvent(
+                            "Contains invalid coordinate",
+                            "CLOSE",
+                            3000,
+                            true,
+                            b -> snackBar.close()
+                    ));
                 }
-
-                MarkerOptions markerOptions = new MarkerOptions();
-                markerOptions.position(latLong);
-                marker = new Marker(markerOptions);
-                map.addMarker(marker);
-
-            } else {
-                snackBar.fireEvent(new JFXSnackbar.SnackbarEvent(
-                        "Contains invalid coordinate",
-                        "CLOSE",
-                        3000,
-                        true,
-                        b -> snackBar.close()
-                ));
-            }
+            });
+            if (latLong[0] != null) map.setCenter(latLong[0]);
+            System.gc();
         });
     }
 
@@ -295,6 +318,13 @@ public class Controller implements Initializable, MapComponentInitializedListene
                 .zoom(12);
 
         map = mapView.createMap(mapOptions);
+        map.addMouseEventHandler(UIEventType.rightclick, (GMapMouseEvent event) -> {
+            LatLong latLong = event.getLatLong();
+            double latitude = latLong.getLatitude();
+            double longitude = latLong.getLongitude();
+            addPlaceMarkDialogCoordinate.setText(Double.toString(longitude).concat(",").concat(Double.toString(latitude)));
+            addPlaceMarkDialog.show(centerBorderPane);
+        });
     }
 
     public void searchAddress() {
@@ -313,39 +343,33 @@ public class Controller implements Initializable, MapComponentInitializedListene
                 warningDialogBody.setText("Multiple results found, showing the first one.");
                 warningDialog.setTransitionType(JFXDialog.DialogTransition.CENTER);
                 warningDialog.show(centerBorderPane);
+                warningDialog.requestFocus();
                 latLong = new LatLong(results[0].getGeometry().getLocation().getLatitude(), results[0].getGeometry().getLocation().getLongitude());
             } else {
                 latLong = new LatLong(results[0].getGeometry().getLocation().getLatitude(), results[0].getGeometry().getLocation().getLongitude());
             }
 
             map.setCenter(latLong);
+            markers.forEach(e -> {
+                e.setVisible(false);
+                map.removeMarker(e);
+                e = null;
+            });
+
+            MarkerOptions markerOptions = new MarkerOptions();
+            markerOptions.position(latLong);
+            Marker marker = new Marker(markerOptions);
+            map.addMarker(marker);
+            map.setZoom(18);
+
+            markers.add(marker);
+            System.gc();
 
         });
     }
 
     public void showConvertFilesDialog() {
         convertDialog.show(sCenterBorderPane);
-    }
-
-    public void CSVtoKML() {
-        Stage mainStage = SharedElements.getMainStage();
-
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Select CSV to convert");
-        fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("CSV", "*.csv"),
-                new FileChooser.ExtensionFilter("All Files", "*.*"));
-        File inputFile = fileChooser.showOpenDialog(mainStage);
-        if (inputFile != null) {
-            String SoutputFile = inputFile.getAbsolutePath().replace(".csv", ".kml");
-            File outputFile = new File(SoutputFile);
-            while (outputFile.exists()) {
-                SoutputFile = SoutputFile.replace(".kml", " copy.kml");
-                outputFile = new File(SoutputFile);
-            }
-
-            new CSVDocument(inputFile, outputFile);
-        }
     }
 
     public static void showWarningDialog(String headerDialog, String bodyDialog) {
@@ -391,7 +415,7 @@ public class Controller implements Initializable, MapComponentInitializedListene
         Stage mainStage = SharedElements.getMainStage();
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Select file to open");
-        if(optInputKML.isSelected()) {
+        if (optInputKML.isSelected()) {
             fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Keyhole Markup Language", "*.kml"));
         } else if (optInputKMZ.isSelected()) {
             fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Keyhole Markup Language Zipped", "*.kmz"));
@@ -400,7 +424,7 @@ public class Controller implements Initializable, MapComponentInitializedListene
         }
 
         File inputFile = fileChooser.showOpenDialog(mainStage);
-        if(inputFile != null) {
+        if (inputFile != null) {
             convertInputFile = inputFile;
         }
     }
@@ -409,7 +433,7 @@ public class Controller implements Initializable, MapComponentInitializedListene
         Stage mainStage = SharedElements.getMainStage();
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Select file to convert to");
-        if(optOutputKML.isSelected()) {
+        if (optOutputKML.isSelected()) {
             fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Keyhole Markup Language", "*.kml"));
         } else if (optOutputKMZ.isSelected()) {
             fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Keyhole Markup Language Zipped", "*.kmz"));
@@ -418,17 +442,17 @@ public class Controller implements Initializable, MapComponentInitializedListene
         }
 
         File outputFile = fileChooser.showSaveDialog(mainStage);
-        if(outputFile != null) {
+        if (outputFile != null) {
             convertOutputFile = outputFile;
         }
     }
 
     public void convertFiles() {
-        if(convertInputFile == null) {
+        if (convertInputFile == null) {
             Controller.showWarningDialog("Error", "Please select input source file");
             return;
         }
-        if(convertOutputFile == null) {
+        if (convertOutputFile == null) {
             Controller.showWarningDialog("Error", "Please select output source file");
             return;
         }
@@ -464,14 +488,137 @@ public class Controller implements Initializable, MapComponentInitializedListene
                 return;
         }
 
-        if(inputType == outputType) {
+        if (inputType == outputType) {
             Controller.showWarningDialog("Don't be silly",
                     "Please select different file types" +
-                    " as input/output appear to be the same!");
+                            " as input/output appear to be the same!");
             return;
         }
 
-        System.out.println("Good to go");
+        Document document = null;
+        switch (inputType) {
+            case KML:
+                document = FileHandler.openFromKML(convertInputFile);
+                break;
+            case KMZ:
+                document = FileHandler.openFromKMZ(convertInputFile);
+                break;
+            case CSV:
+                document = FileHandler.openFromCSV(convertInputFile);
+                break;
+        }
 
+        if (document == null) return;
+
+        switch (outputType) {
+            case KML:
+                FileHandler.saveToKML(convertOutputFile, document);
+                break;
+            case KMZ:
+                FileHandler.saveToKMZ(convertOutputFile, document);
+                break;
+            case CSV:
+                ObservableList<KMLDocument.Placemark> data = FXCollections.observableArrayList();
+                KMLDocument.loadFromDocument(data, document);
+                FileHandler.saveDocumentToCSV(data, convertOutputFile);
+                break;
+        }
+
+        convertDialog.close();
+        convertInputFile = null;
+        convertOutputFile = null;
+    }
+
+    public void treeListener(KeyEvent keyEvent) {
+        if (keyEvent.getCode() == KeyCode.DELETE) {
+
+            //messy, could be optimised?
+
+            ObservableList<TreeTablePosition<KMLDocument.Placemark, ?>> items = treeTableView.getSelectionModel().getSelectedCells();
+            ArrayList<TreeItem<KMLDocument.Placemark>> copies = new ArrayList<>(items.size());
+
+            items.forEach(e -> copies.add(e.getTreeItem()));
+            treeTableView.getSelectionModel().clearSelection();
+            copies.forEach(e -> {
+                //TreeItem<KMLDocument.Placemark> placemark = e.getTreeItem();
+                //placemark.getParent().getChildren().remove(placemark);
+                //placemark.getValue().getReference().getParentNode().removeChild(placemark.getValue().getReference());
+                //System.out.println(recursiveTreeItem.getChildren().remove(e));
+                for (int i = 0; i < document.getData().size(); i++) {
+                    if (document.getData().get(i).getCoordinate().equals(e.getValue().getCoordinate()))
+                        document.getData().remove(i);
+                }
+            });
+            treeTableView.currentItemsCountProperty().setValue(document.getData().size());
+            treeTableView.refresh();
+            System.gc();
+        }
+    }
+
+    public void closeAddPlaceMarkDialog() {
+        addPlaceMarkDialog.close();
+    }
+
+    public void addPlaceMark() {
+        if (document == null) {
+            showWarningDialog("Error", "Please ensure KML has been loaded!");
+            return;
+        }
+
+        Document documentM = document.getKmlDocument();
+        NodeList nodeList = documentM.getElementsByTagName("Placemark");
+        Node lastNode = nodeList.item(nodeList.getLength() - 1);
+
+        Element newPlacemark = documentM.createElement("Placemark");
+        Element newName = documentM.createElement("name");
+        newName.setTextContent(addPlaceMarkDialogName.getText());
+        newPlacemark.appendChild(newName);
+
+        Element newDescription = documentM.createElement("description");
+        newDescription.setTextContent(addPlaceMarkDialogDescription.getText());
+        newPlacemark.appendChild(newDescription);
+
+        Element newStyle = documentM.createElement("Style");
+        Element newIconStyle = documentM.createElement("scale");
+        Element newScale = documentM.createElement("scale");
+        newScale.setTextContent("0.9");
+        Element newIcon = documentM.createElement("Icon");
+        Element newHref = documentM.createElement("href");
+        newHref.setTextContent("http://maps.google.com/mapfiles/kml/pushpin/blue-pushpin.png");
+
+        newIcon.appendChild(newHref);
+        newIconStyle.appendChild(newScale);
+        newIconStyle.appendChild(newIcon);
+        newStyle.appendChild(newIconStyle);
+        newPlacemark.appendChild(newStyle);
+
+        Element newPoint = documentM.createElement("Point");
+        Element newExtrude = documentM.createElement("extrude");
+        newExtrude.setTextContent("0");
+        newPoint.appendChild(newExtrude);
+        Element newAltitudeMode = documentM.createElement("altitudeMode");
+        newAltitudeMode.setTextContent("clampToGround");
+        newPoint.appendChild(newAltitudeMode);
+        Element newCoordinates = documentM.createElement("coordinates");
+        newCoordinates.setTextContent(addPlaceMarkDialogCoordinate.getText());
+        newPoint.appendChild(newCoordinates);
+
+
+        newPlacemark.appendChild(newPoint);
+        lastNode.getParentNode().appendChild(newPlacemark);
+
+        document.getData().add(new KMLDocument.Placemark(
+                newName.getTextContent(),
+                newDescription.getTextContent(),
+                newCoordinates.getTextContent(),
+                newPlacemark,
+                newName,
+                newDescription,
+                newCoordinates
+
+        ));
+        treeTableView.currentItemsCountProperty().setValue(document.getData().size());
+        treeTableView.refresh();
+        addPlaceMarkDialog.close();
     }
 }

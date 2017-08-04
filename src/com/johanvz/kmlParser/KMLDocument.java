@@ -27,6 +27,51 @@ public class KMLDocument {
         loadFile();
     }
 
+    public static void loadFromDocument(final ObservableList<Placemark> data, Document document) {
+        NodeList nodeList = document.getElementsByTagName("Placemark");
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Node node = nodeList.item(i);
+            Element element = (Element) node;
+            NodeList names = element.getElementsByTagName("name");
+            if(names.getLength() > 0) {
+                NodeList description = element.getElementsByTagName("description");
+                NodeList coordinates = element.getElementsByTagName("coordinates");
+
+                Node name = names.item(0);
+                Node descriptionNode;
+                Node coordinateNode;
+
+                if(description.getLength() > 0) {
+                    descriptionNode = description.item(0);
+                } else {
+                    Element newDescription = document.createElement("description");
+                    newDescription.setTextContent("NULL");
+                    node.appendChild(newDescription);
+                    descriptionNode = newDescription;
+                }
+
+                if(coordinates.getLength() > 0) {
+                    coordinateNode = coordinates.item(0);
+                } else {
+                    Element newCoordinate = document.createElement("coordinates");
+                    newCoordinate.setTextContent("NULL");
+                    node.appendChild(newCoordinate);
+                    coordinateNode = newCoordinate;
+                }
+
+                data.add(new Placemark(
+                        name.getTextContent(),
+                        descriptionNode.getTextContent(),
+                        coordinateNode.getTextContent(),
+                        node,
+                        name,
+                        descriptionNode,
+                        coordinateNode
+                ));
+            }
+        }
+    }
+
     private void loadFile() {
 
         switch (file.getName().substring(file.getName().length() - 3)) {
@@ -46,47 +91,7 @@ public class KMLDocument {
             return;
         }
 
-        NodeList nodeList = kmlDocument.getElementsByTagName("Placemark");
-        for (int i = 0; i < nodeList.getLength(); i++) {
-            Node node = nodeList.item(i);
-            Element element = (Element) node;
-            NodeList names = element.getElementsByTagName("name");
-            if(names.getLength() > 0) {
-                NodeList description = element.getElementsByTagName("description");
-                NodeList coordinates = element.getElementsByTagName("coordinates");
-
-                Node name = names.item(0);
-                Node descriptionNode;
-                Node coordinateNode;
-
-                if(description.getLength() > 0) {
-                    descriptionNode = description.item(0);
-                } else {
-                    Element newDescription = kmlDocument.createElement("description");
-                    newDescription.setTextContent("NULL");
-                    node.appendChild(newDescription);
-                    descriptionNode = newDescription;
-                }
-
-                if(coordinates.getLength() > 0) {
-                    coordinateNode = coordinates.item(0);
-                } else {
-                    Element newCoordinate = kmlDocument.createElement("coordinates");
-                    newCoordinate.setTextContent("NULL");
-                    node.appendChild(newCoordinate);
-                    coordinateNode = newCoordinate;
-                }
-
-                data.add(new Placemark(
-                        name.getTextContent(),
-                        descriptionNode.getTextContent(),
-                        coordinateNode.getTextContent(),
-                        name,
-                        descriptionNode,
-                        coordinateNode
-                ));
-            }
-        }
+        loadFromDocument(data, kmlDocument);
 
         Controller.showSnackBar("Successfully Loaded");
     }
@@ -103,15 +108,16 @@ public class KMLDocument {
         final StringProperty name;
         final StringProperty description;
         final StringProperty coordinate;
-        final Node nodeName, nodeDescription, nodeCoordinate;
+        final Node nodeName, nodeDescription, nodeCoordinate, reference;
 
-        Placemark(String name, String description, String coordinate, Node nodeName, Node nodeDescription, Node nodeCoordinate) {
+        Placemark(String name, String description, String coordinate, Node reference, Node nodeName, Node nodeDescription, Node nodeCoordinate) {
             this.name = new SimpleStringProperty(name);
             this.description = new SimpleStringProperty(description);
             this.coordinate = new SimpleStringProperty(coordinate);
             this.nodeName = nodeName;
             this.nodeDescription = nodeDescription;
             this.nodeCoordinate = nodeCoordinate;
+            this.reference = reference;
         }
 
         StringProperty getName() {
@@ -136,6 +142,10 @@ public class KMLDocument {
 
         public Node getNodeCoordinate() {
             return nodeCoordinate;
+        }
+
+        public Node getReference() {
+            return reference;
         }
     }
 }

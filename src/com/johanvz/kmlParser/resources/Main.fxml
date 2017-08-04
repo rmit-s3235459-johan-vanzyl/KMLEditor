@@ -78,12 +78,12 @@
                 </JFXToolbar>
             </top>
             <center>
-                <SplitPane dividerPositions="0.60" prefHeight="${root.height}" prefWidth="${root.width}">
+                <SplitPane dividerPositions="0.63" prefHeight="${root.height}" prefWidth="${root.width}">
                     <items>
                         <StackPane fx:id="centerBorderPane" minHeight="0.0" minWidth="0.0">
                             <VBox spacing="10">
                                 <HBox alignment="CENTER">
-                                    <Label styleClass="title-label">KML Elements</Label>
+                                    <Label styleClass="title-label">Placemarks</Label>
                                     <Label styleClass="title-label" fx:id="rowCount"/>
                                     <StackPane HBox.hgrow="ALWAYS">
                                         <StackPane StackPane.alignment="CENTER_RIGHT" maxWidth="300">
@@ -91,7 +91,8 @@
                                         </StackPane>
                                     </StackPane>
                                 </HBox>
-                                <JFXTreeTableView fx:id="treeTableView" prefHeight="${root.height}">
+                                <JFXTreeTableView fx:id="treeTableView" prefHeight="${root.height - 141}"
+                                                  onKeyPressed="#treeListener">
                                     <columns>
                                         <JFXTreeTableColumn fx:id="name"
                                                             text="Name" minWidth="250"/>
@@ -107,7 +108,8 @@
                             <children>
                                 <GoogleMapView fx:id="mapView" prefHeight="500.0" prefWidth="700.0"
                                                AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0.0"
-                                               AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0.0"/>
+                                               AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0.0"
+                                />
                                 <TextField fx:id="addressTextField" promptText="Search Address..." prefWidth="150"
                                            AnchorPane.rightAnchor="10" AnchorPane.topAnchor="10"
                                            onAction="#searchAddress"/>
@@ -169,18 +171,20 @@
                                 </toggleGroup>
                             </JFXRadioButton>
                             <JFXRadioButton fx:id="optInputKMZ"
-                                            text="KMZ" toggleGroup="$toggleGroup1" styleClass="custom-jfx-radio-button"/>
+                                            text="KMZ" toggleGroup="$toggleGroup1"
+                                            styleClass="custom-jfx-radio-button"/>
                             <JFXRadioButton fx:id="optInputCSV"
-                                            text="CSV" toggleGroup="$toggleGroup1" styleClass="custom-jfx-radio-button"/>
+                                            text="CSV" toggleGroup="$toggleGroup1"
+                                            styleClass="custom-jfx-radio-button"/>
                             <JFXButton styleClass="dialog-accept" onMouseClicked="#convertSelectInput">LOAD</JFXButton>
                         </children>
                     </VBox>
                     <VBox style="-fx-min-width: 50px" spacing="30">
-                        <Label> </Label>
-                        <Label> </Label>
-                        <Label> </Label>
-                        <Label> </Label>
-                        <Label> </Label>
+                        <Label></Label>
+                        <Label></Label>
+                        <Label></Label>
+                        <Label></Label>
+                        <Label></Label>
                     </VBox>
                     <VBox spacing="30" styleClass="vbox_split">
                         <children>
@@ -193,10 +197,13 @@
                                 </toggleGroup>
                             </JFXRadioButton>
                             <JFXRadioButton fx:id="optOutputKMZ"
-                                            text="KMZ" toggleGroup="$toggleGroup2" styleClass="custom-jfx-radio-button"/>
+                                            text="KMZ" toggleGroup="$toggleGroup2"
+                                            styleClass="custom-jfx-radio-button"/>
                             <JFXRadioButton fx:id="optOutputCSV"
-                                            text="CSV" toggleGroup="$toggleGroup2" styleClass="custom-jfx-radio-button"/>
-                            <JFXButton styleClass="dialog-accept" onMouseClicked="#convertSelectOutput">SELECT</JFXButton>
+                                            text="CSV" toggleGroup="$toggleGroup2"
+                                            styleClass="custom-jfx-radio-button"/>
+                            <JFXButton styleClass="dialog-accept" onMouseClicked="#convertSelectOutput">SELECT
+                            </JFXButton>
                         </children>
                     </VBox>
                 </HBox>
@@ -204,6 +211,25 @@
             <actions>
                 <JFXButton styleClass="dialog-reject" onMouseClicked="#closeConvertDialog">CANCEL</JFXButton>
                 <JFXButton styleClass="dialog-green" onMouseClicked="#convertFiles">CONVERT</JFXButton>
+            </actions>
+        </JFXDialogLayout>
+    </JFXDialog>
+
+    <JFXDialog fx:id="addPlaceMarkDialog">
+        <JFXDialogLayout>
+            <heading>
+                <Label style="-fx-padding: 0 0 10px 0">Add Placemark</Label>
+            </heading>
+            <body>
+                <VBox prefWidth="300" spacing="40" maxWidth="400" alignment="CENTER">
+                    <JFXTextField promptText="Name" fx:id="addPlaceMarkDialogName"/>
+                    <JFXTextField promptText="Description" fx:id="addPlaceMarkDialogDescription"></JFXTextField>
+                    <JFXTextField promptText="Coordinate" fx:id="addPlaceMarkDialogCoordinate"></JFXTextField>
+                </VBox>
+            </body>
+            <actions>
+                <JFXButton styleClass="dialog-reject" onMouseClicked="#closeAddPlaceMarkDialog">CANCEL</JFXButton>
+                <JFXButton styleClass="dialog-green" onMouseClicked="#addPlaceMark">ADD</JFXButton>
             </actions>
         </JFXDialogLayout>
     </JFXDialog>
