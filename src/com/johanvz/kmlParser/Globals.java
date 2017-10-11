@@ -1,5 +1,7 @@
 package com.johanvz.kmlParser;
 
+import okhttp3.MediaType;
+
 public interface Globals {
     String KMLSTART =
             "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?>\n" +
@@ -42,4 +44,7 @@ public interface Globals {
                     "            </Placemark>\n";
 
     enum FileTypes {KML, KMZ, CSV}
+
+    String urlUL = "http://localhost:8080/api/clientul";
+    MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 }

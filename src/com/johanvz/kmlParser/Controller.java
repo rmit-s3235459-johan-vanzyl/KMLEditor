@@ -4,6 +4,7 @@ import com.jfoenix.controls.*;
 import com.jfoenix.controls.cells.editors.TextFieldEditorBuilder;
 import com.jfoenix.controls.cells.editors.base.GenericEditableTreeTableCell;
 import com.jfoenix.controls.datamodels.treetable.RecursiveTreeObject;
+import com.johanvz.kmlParser.model.Client;
 import com.lynden.gmapsfx.GoogleMapView;
 import com.lynden.gmapsfx.MapComponentInitializedListener;
 import com.lynden.gmapsfx.javascript.event.GMapMouseEvent;
@@ -88,6 +89,11 @@ public class Controller implements Initializable, MapComponentInitializedListene
     public JFXRadioButton optOutputCSV;
     public JFXDialog addPlaceMarkDialog;
     public JFXTextField addPlaceMarkDialogName;
+    public JFXTextField addPlaceMarkDialogCoordinate;
+    public JFXTextField addPlaceMarkDialogDescription;
+    public JFXDialog uploadDialog;
+    public JFXTextField ulUserID;
+    public JFXPasswordField ulUserPW;
 
     // static content for other classes
     private static JFXDialog sWarningDialog;
@@ -100,8 +106,8 @@ public class Controller implements Initializable, MapComponentInitializedListene
     private static Label sYesNoDialogDialogBody;
     private static JFXButton sYesNoDialogYes;
     private static JFXButton sYesNoDialogNo;
-    public JFXTextField addPlaceMarkDialogCoordinate;
-    public JFXTextField addPlaceMarkDialogDescription;
+
+
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -620,5 +626,77 @@ public class Controller implements Initializable, MapComponentInitializedListene
         treeTableView.currentItemsCountProperty().setValue(document.getData().size());
         treeTableView.refresh();
         addPlaceMarkDialog.close();
+    }
+
+    public void uploadSelectedClients() {
+        if(ulUserID.getText().length() < 6) {
+            snackBar.fireEvent(new JFXSnackbar.SnackbarEvent(
+                    "Username too short",
+                    "CLOSE",
+                    3000,
+                    true,
+                    b -> snackBar.close()
+            ));
+            return;
+        }
+        if(ulUserPW.getText().length() < 6) {
+            snackBar.fireEvent(new JFXSnackbar.SnackbarEvent(
+                    "Password too short",
+                    "CLOSE",
+                    3000,
+                    true,
+                    b -> snackBar.close()
+            ));
+            return;
+        }
+
+        snackBar.fireEvent(new JFXSnackbar.SnackbarEvent(
+                "Uploading..",
+                "CLOSE",
+                3000,
+                true,
+                b -> snackBar.close()
+        ));
+
+        String username = ulUserID.getText();
+        String password = ulUserPW.getText();
+
+
+        TreeTableView.TreeTableViewSelectionModel<KMLDocument.Placemark> selectionModel = treeTableView.getSelectionModel();
+        ObservableList<TreeTablePosition<KMLDocument.Placemark, ?>> selectedList = selectionModel.getSelectedCells();
+        Connector connector = new Connector(username, password);
+
+        new Thread(() -> {
+            selectedList.forEach(e -> {
+                KMLDocument.Placemark placemark = e.getTreeItem().getValue();
+
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e1) {
+                    e1.printStackTrace();
+                }
+
+                String response = connector.postClient(
+                        new Client(placemark.getName().get(),
+                                placemark.getDescription().get(),
+                                placemark.getCoordinate().get())
+                );
+
+                if(!response.contains("success")) {
+                    System.out.println("ERROR, SOMETHING WENT WRONG");
+                    System.out.println(response);
+                }
+            });
+            closeUploadDialog();
+        }).start();
+
+    }
+
+    public void closeUploadDialog() {
+        uploadDialog.close();
+    }
+
+    public void showUploadDialog() {
+        uploadDialog.show(centerBorderPane);
     }
 }

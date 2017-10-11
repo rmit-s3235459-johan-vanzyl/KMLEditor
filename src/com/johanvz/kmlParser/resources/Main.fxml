@@ -22,6 +22,8 @@
 <?import javafx.scene.control.TextField?>
 <?import com.jfoenix.controls.JFXRadioButton?>
 <?import javafx.scene.control.ToggleGroup?>
+<?import com.jfoenix.controls.JFXPasswordField?>
+<?import com.jfoenix.validation.RequiredFieldValidator?>
 <AnchorPane fx:id="root" minWidth="1280" minHeight="800" xmlns="http://javafx.com/javafx/8.0.121"
             xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.johanvz.kmlParser.Controller">
     <children>
@@ -70,6 +72,20 @@
                                     </Label>
                                     <Label style="-fx-padding: 0 0 0 13">
                                         Convert
+                                    </Label>
+                                </VBox>
+                            </JFXRippler>
+                            <JFXRippler>
+                                <VBox styleClass="jfx-custom-vbox" onMouseClicked="#showUploadDialog">
+                                    <Label>
+                                        <graphic>
+                                            <StackPane styleClass="tool-bar-graphic-container">
+                                                <FontAwesomeIconView glyphName="CLOUD" size="64px"/>
+                                            </StackPane>
+                                        </graphic>
+                                    </Label>
+                                    <Label style="-fx-padding: 0 0 0 18">
+                                        Upload
                                     </Label>
                                 </VBox>
                             </JFXRippler>
@@ -215,6 +231,37 @@
         </JFXDialogLayout>
     </JFXDialog>
 
+    <JFXDialog fx:id="uploadDialog">
+        <JFXDialogLayout>
+            <heading>
+                <Label style="-fx-padding: 0 0 10px 0">Upload selected contacts</Label>
+            </heading>
+            <body>
+                <VBox>
+                    <JFXTextField promptText="Username" fx:id="ulUserID">
+                        <validators>
+                            <RequiredFieldValidator message="Input Required!">
+                                <FontAwesomeIconView glyphName="WARNING" style="-fx-font-family: FontAwesome;"/>
+                            </RequiredFieldValidator>
+                        </validators>
+                    </JFXTextField>
+                    <Label></Label>
+                    <JFXPasswordField promptText="Password" fx:id="ulUserPW">
+                        <validators>
+                            <RequiredFieldValidator message="Input Required!">
+                                <FontAwesomeIconView glyphName="WARNING" style="-fx-font-family: FontAwesome;"/>
+                            </RequiredFieldValidator>
+                        </validators>
+                    </JFXPasswordField>
+                </VBox>
+            </body>
+            <actions>
+                <JFXButton styleClass="dialog-reject" onMouseClicked="#closeUploadDialog">CANCEL</JFXButton>
+                <JFXButton styleClass="dialog-green" onMouseClicked="#uploadSelectedClients">UPLOAD</JFXButton>
+            </actions>
+        </JFXDialogLayout>
+    </JFXDialog>
+
     <JFXDialog fx:id="addPlaceMarkDialog">
         <JFXDialogLayout>
             <heading>
@@ -227,10 +274,7 @@
                     <JFXTextField promptText="Coordinate" fx:id="addPlaceMarkDialogCoordinate"></JFXTextField>
                 </VBox>
             </body>
-            <actions>
-                <JFXButton styleClass="dialog-reject" onMouseClicked="#closeAddPlaceMarkDialog">CANCEL</JFXButton>
-                <JFXButton styleClass="dialog-green" onMouseClicked="#addPlaceMark">ADD</JFXButton>
-            </actions>
+
         </JFXDialogLayout>
     </JFXDialog>
 
