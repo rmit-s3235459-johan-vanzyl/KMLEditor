@@ -45,6 +45,7 @@ public interface Globals {
 
     enum FileTypes {KML, KMZ, CSV}
 
-    String urlUL = "http://localhost:8080/api/clientul";
+
+    String urlUL = "http://cloudtracker-war.ap-southeast-2.elasticbeanstalk.com/api/clientul";
     MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 }
